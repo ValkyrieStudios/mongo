@@ -120,7 +120,7 @@ TODO
 #### connect ():Promise<Db>
 Establish connection to mongodb using the instance configuration.
 
-Take Note:
+Note:
 - This **will not** establish multiple connections if a client pool already exists, as such this can be called safely multiple times.
 - This **will throw** if the instance fails to acquire a connection
 - Most operations handle calling `.connect()` behind the scenes, as such you will not need to use this in most real-world scenarios
@@ -178,8 +178,9 @@ import MyMongo from './Mongo';
 await MyMongo.dropCollection('sales_2008'); 
 ```
 
-Note: There is no need to call connect prior to this operation as this is handled internally.
-Note: **⚠️ Careful: This operation removes a collection and is irreversible**
+Note:
+- There is no need to call connect prior to this operation as this is handled internally.
+- **⚠️ Careful: This operation removes a collection and is irreversible**
 
 #### hasIndex (collection:string, name:string):Promise<boolean> 
 Verify whether or not an index exists for a particular collection on the database. Returns true if the index exists and false if it
@@ -216,17 +217,51 @@ import MyMongo from './Mongo';
 await MyMongo.dropIndex('sales_2008', 'date_desc'); 
 ```
 
-Note: There is no need to call connect prior to this operation as this is handled internally.
-Note: **⚠️ Careful: This operation removes an index, though not irreversible it might harm performance if that index is still in use**
+Note:
+- There is no need to call connect prior to this operation as this is handled internally.
+- **⚠️ Careful: This operation removes an index, though not irreversible it might harm performance if that index is still in use**
 
-#### query
-TODO
+#### query (collection:string):Query
+Get a query instance for a specific collection (more on Querying in the secion titled [Querying](#querying)
+
+For example let's say we wanted a query instance for a particular collection to reuse later down the line:
+```typescript
+import MyMongo from './Mongo';
+
+const qUser = MyMongo.query('users');
+
+...
+
+/* Retrieve peter */
+const user = await qUser.aggregate([
+    {$match: {name: {$eq: 'Peter'}}},
+    {$limit: 1},
+    {$project: {uid: 1}},
+]);
+
+/* Remove peter */
+if (Array.isArray(user) && user.length) await qUser.removeOne({uid: {$eq: user[0].uid}});
+```
+
+Note:
+- There is no need to call connect prior to this operation as this is handled internally.
+- A query instance can be re-used however many times necessary
 
 #### aggregate
 TODO
 
-#### close
-TODO
+#### close ():Promise<void>
+Closes the client pool
+
+```typescript
+import MyMongo from './Mongo';
+await MyMongo.close();
+```
+
+Note:
+- Any operation done after the client pool is closed will re-open the client pool
+- This can be useful to run cleanup when shutting down an application
+- This will not do anything and simply resolve if the client pool did not exist or was not connected
 
 ## Querying
 #### aggregate
@@ -252,4 +287,5 @@ TODO
 
 ## Contributors
 - [Peter Vermeulen](mailto:contact@valkyriestudios.be)
+
 

@@ -1,7 +1,9 @@
 # @valkyriestudios/mongo
 
-[![codecov](https://codecov.io/gh/ValkyrieStudios/mongo/branch/main/graph/badge.svg)](https://codecov.io/gh/ValkyrieStudios/mongo)
-[![codeql](https://github.com/ValkyrieStudios/mongo/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/ValkyrieStudios/mongo/actions/workflows/github-code-scanning/codeql)
+[![CodeCov](https://codecov.io/gh/ValkyrieStudios/mongo/branch/main/graph/badge.svg)](https://codecov.io/gh/ValkyrieStudios/mongo)
+[![Test](https://github.com/ValkyrieStudios/mongo/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/ValkyrieStudios/mongo/actions/workflows/test.yml)
+[![Lint](https://github.com/ValkyrieStudios/mongo/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/ValkyrieStudios/mongo/actions/workflows/lint.yml)
+[![CodeQL](https://github.com/ValkyrieStudios/mongo/actions/workflows/github-code-scanning/codeql/badge.svg?branch=main)](https://github.com/ValkyrieStudios/mongo/actions/workflows/github-code-scanning/codeql)
 [![npm](https://img.shields.io/npm/v/@valkyriestudios/mongo.svg)](https://www.npmjs.com/package/@valkyriestudios/mongo)
 [![npm](https://img.shields.io/npm/dm/@valkyriestudios/mongo.svg)](https://www.npmjs.com/package/@valkyriestudios/mongo)
 

@@ -60,7 +60,7 @@ The following is the list of options available for configuration as well as thei
 Below is an example of such a configuration object for an atlas cluster hosted at 'dummyatlas.example.mongodb.net' with a user called 'root' and a password of 'rootroot' for a connection pool with size 50.
 
 **Take note: In real-world scenarios the values here should never be part of a codebase but be provided through the environment**
-```
+```typescript
 {
     pool_size: 50,
     host: 'dummyatlas.example.mongodb.net',
@@ -72,13 +72,47 @@ Below is an example of such a configuration object for an atlas cluster hosted a
 
 ## Available Functions
 #### GET uid
-TODO
+Getter for a hashed signature of the mongo instance, this can be used for internal systems working with factory-style approaches to ensure only one
+connection pool is created for a particular configuration.
+
+Example:
+```typescript
+import Mongo from '@valkyriestudios/mongo';
+const instance = new Mongo({user: 'admin', pass: 'root', db: 'main', read_preference: 'nearest'});
+console.info(instance.uid); // 'mongodb:2283077747'
+```
+
+Take note: Only certain properties of the configuration are taken into account for hashing of the signature. These properties are: `protocol`, `user`,
+`pass`, `host`, `auth_db`, `replset`.
 
 #### GET isConnected
-TODO
+Whether or not the mongo instance is successfully connected and the pool is operational.
+
+Example:
+```typescript
+import Mongo from '@valkyriestudios/mongo';
+const instance = new Mongo({user: 'admin', pass: 'root', db: 'main', read_preference: 'nearest'});
+
+console.info(instance.isConnected); // false
+
+await instance.connect();
+
+console.info(instance.isConnected); // true
+```
 
 #### GET isDebugEnabled
-TODO
+Whether or not the instance has debug enabled.
+
+```typescript
+import Mongo from '@valkyriestudios/mongo';
+const instance = new Mongo({user: 'admin', pass: 'root', db: 'main', read_preference: 'nearest'});
+
+console.info(instance.isDebugEnabled); // false
+
+const instance2 = new Mongo({user: 'admin', pass: 'root', db: 'main', read_preference: 'nearest', debug: true});
+
+console.info(instance2.isDebugEnabled); // true
+```
 
 #### bootstrap
 TODO

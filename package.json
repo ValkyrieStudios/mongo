@@ -1,0 +1,50 @@
+{
+    "name": "@valkyriestudios/mongo",
+    "version": "0.0.0",
+    "description": "MongoDB Adapter Library",
+    "main": "index.js",
+    "scripts": {
+        "build": "npm run lint && npm run test && tsc -p ./tsconfig.build.json && tsc -p ./tsconfig.types.json && tsc -p ./tsconfig.types_all.json",
+        "test": "node --require esbuild-register --test ./test/lib/*.test.ts",
+        "test:only": "node --require esbuild-register --test --test-only ./test/lib/*.test.ts",
+        "test:coverage": "nyc npm run test",
+        "lint": "npm run lint:src && npm run lint:test",
+        "lint:src": "./node_modules/.bin/eslint --ext .js,.ts,.mjs ./lib",
+        "lint:test": "./node_modules/.bin/eslint --ext .js,.ts,.mjs ./test"
+    },
+    "author": {
+        "name": "Peter Vermeulen",
+        "email": "contact@valkyriestudios.be",
+        "url": "https://www.valkyriestudios.be"
+    },
+    "keywords": [
+        "database",
+        "adapter",
+        "mongodb",
+        "nodejs",
+        "javasript",
+        "typescript"
+    ],
+    "license": "ISC",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ValkyrieStudios/mongo.git"
+    },
+    "bugs": {
+        "url": "https://github.com/ValkyrieStudios/mongo/issues"
+    },
+    "homepage": "https://github.com/ValkyrieStudios/mongo@readme",
+    "dependencies": {
+        "@valkyriestudios/validator": "^9.3.0",
+        "mongodb": "^6.5.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.12.7",
+        "@typescript-eslint/eslint-plugin": "^7.6.0",
+        "@typescript-eslint/parser": "^7.6.0",
+        "esbuild-register": "^3.5.0",
+        "eslint": "^8.57.0",
+        "nyc": "^15.1.0",
+        "typescript": "^5.4.5"
+    }
+}

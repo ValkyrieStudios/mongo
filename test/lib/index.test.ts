@@ -2849,18 +2849,18 @@ describe('Index', () => {
         });
     });
 
-    describe('beamQuery', () => {
+    describe('aggregate', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
-            assert.ok(DBMongo.beamQuery === undefined);
+            assert.ok(DBMongo.aggregate === undefined);
             assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
         it('Should not be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
-            assert.ok(Validator.rules.function(instance.beamQuery));
-            assert.ok(Validator.rules.async_function(instance.beamQuery));
+            assert.ok(Validator.rules.function(instance.aggregate));
+            assert.ok(Validator.rules.async_function(instance.aggregate));
             assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
             assert.deepEqual(MockClient.calls, []);
         });
@@ -2871,14 +2871,79 @@ describe('Index', () => {
                 let val = false;
                 try {
                     /* @ts-ignore */
-                    await instance.beamQuery(el);
+                    await instance.aggregate(el);
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'Mongo@beamQuery: Collection should be a non-empty string');
+                assert.equal(val, 'Mongo@aggregate: Collection should be a non-empty string');
                 assert.deepEqual(MockClient.calls, []);
                 assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
             }
+        });
+
+        it('Should throw if not passed a pipeline array or passed an empty pipeline array', async () => {
+            const instance = new DBMongo(FULL_VALID_OPTS);
+            for (const el of CONSTANTS.NOT_ARRAY_WITH_EMPTY) {
+                let val = false;
+                try {
+                    await instance.aggregate('test', el);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'Mongo@aggregate: Pipeline should be a non-empty array');
+                assert.deepEqual(MockClient.calls, []);
+                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            }
+        });
+
+        it('Should throw if passed a pipeline array consisting solely of non/empty objects', async () => {
+            const instance = new DBMongo(FULL_VALID_OPTS);
+            let val = false;
+            try {
+                await instance.aggregate('test', CONSTANTS.NOT_OBJECT_WITH_EMPTY);
+            } catch (err) {
+                val = err.message;
+            }
+            assert.equal(val, 'Mongo@aggregate: Pipeline empty after sanitization');
+            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+        });
+
+        it('Should not throw and return query aggregate if passed a pipeline array consisting of some non/empty objects', async () => {
+            MockClient.setConnectMode('success');
+            MockClient.setDbMode('success');
+            MockDb.setDbColMode('mock');
+            const mock_col = new MockCollection('mycollection');
+            mock_col.setColAggregate('success');
+            MockDb.setMockCol(mock_col);
+
+            const instance = new DBMongo(FULL_VALID_OPTS);
+            await instance.aggregate('mycollection', [
+                {$match: {name: {$eq: 'peter'}}},
+                ...CONSTANTS.NOT_OBJECT_WITH_EMPTY,
+                {$count: 'tally'},
+            ]);
+            assert.deepEqual(MockClient.calls, [
+                {key: 'connect', params: FULL_VALID_CONNECT_EXPECTED_PAYLOAD},
+                {key: 'db', params: {
+                    name: 'main',
+                    opts: {
+                        readPreference: 'nearest',
+                        retryWrites: true,
+                    },
+                }},
+            ]);
+            assert.deepEqual(mockConsoleInfo.calls, [
+                ['Mongo: Instantiated'],
+                ['Mongo@connect: Establishing connection'],
+                ['Mongo@connect: Connection established'],
+            ]);
+            assert.deepEqual(MockDb.calls, [
+                {key: 'collection', params: {name: 'mycollection'}},
+            ]);
+            assert.deepEqual(mock_col.calls, [
+                {key: 'aggregate', params: {options: {}, pipeline: [{$match: {name: {$eq: 'peter'}}}, {$count: 'tally'}]}},
+            ]);
         });
     });
 

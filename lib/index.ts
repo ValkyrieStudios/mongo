@@ -8,7 +8,8 @@ import {
     MongoClient,
     Db,
     Collection,
-    CreateIndexesOptions,
+    type CreateIndexesOptions,
+    type Document,
 } from 'mongodb';
 
 import {
@@ -519,23 +520,25 @@ export default class Mongo {
     }
 
     /**
-     * Valkyrie Beam query handler
+     * Aggregate query handler - Compatible with ValkyrieStudios/Beam
      *
      * @param {string} collection - Collection to query from
      * @param {{[key:string]:any}[]} pipeline - Aggregation pipeline to run]
+     * @returns {Promise<Document[]>}
+     * @throws {Error} When invalid options are passed
      */
-    async beamQuery (collection:string, pipeline:{[key:string]:any}[]) {
-        if (!Is.NeString(collection)) throw new Error('Mongo@beamQuery: Collection should be a non-empty string');
-        if (!Is.NeArray(pipeline)) throw new Error('Mongo@beamQuery: Pipeline should be a non-empty array');
+    async aggregate <T extends Document> (collection:string, pipeline:{[key:string]:any}[]):Promise<T[]> {
+        if (!Is.NeString(collection)) throw new Error('Mongo@aggregate: Collection should be a non-empty string');
+        if (!Is.NeArray(pipeline)) throw new Error('Mongo@aggregate: Pipeline should be a non-empty array');
 
         const s_pipe = [];
         for (const el of pipeline) {
             if (!Is.NeObject(el)) continue;
             s_pipe.push(el);
         }
-        if (!Is.NeArray(s_pipe)) throw new Error('Mongo@beamQuery: Pipeline empty after sanitization');
+        if (!Is.NeArray(s_pipe)) throw new Error('Mongo@aggregate: Pipeline empty after sanitization');
 
-        return new Query(this, collection.trim()).aggregate(s_pipe);
+        return new Query(this, collection.trim()).aggregate<T>(s_pipe);
     }
 
     /**

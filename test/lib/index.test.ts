@@ -104,17 +104,23 @@ describe('Index', () => {
                 assert.deepEqual(MockClient.calls, []);
             });
 
-            it('Should not throw when not passed', () => {
+            it('Should not throw when not passed and not log by default', () => {
                 const opts:any = {...FULL_VALID_OPTS};
                 delete opts.debug;
                 assert.doesNotThrow(() => new DBMongo(opts));
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.deepEqual(mockConsoleInfo.calls, []);
                 assert.deepEqual(MockClient.calls, []);
             });
 
-            it('Should not log if debug is disabled', () => {
+            it('Should not log if debug is passed as false', () => {
                 assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, ...{debug: false}}));
                 assert.deepEqual(mockConsoleInfo.calls, []);
+                assert.deepEqual(MockClient.calls, []);
+            });
+
+            it('Should log if debug is enabled', () => {
+                assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, ...{debug: true}}));
+                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
                 assert.deepEqual(MockClient.calls, []);
             });
         });
@@ -448,7 +454,7 @@ describe('Index', () => {
         it('Should exist', () => {
             const instance = new DBMongo({user: 'peter', pass: 'mysecretpassword', db: 'main'});
             assert.equal(instance.uid, 'mongodb:2036634067');
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -458,7 +464,7 @@ describe('Index', () => {
             /* @ts-ignore */
             instance.uid = 'bla';
             assert.equal(instance.uid, 'mongodb:1156494214');
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -466,7 +472,7 @@ describe('Index', () => {
             for (let i = 0; i < 1000; i++) {
                 const instance = new DBMongo({user: 'peter', pass: 'mysecretpassword', db: 'main'});
                 assert.equal(instance.uid, 'mongodb:2036634067');
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.deepEqual(mockConsoleInfo.calls, []);
                 assert.deepEqual(MockClient.calls, []);
                 mockConsoleInfo.reset();
             }
@@ -476,7 +482,7 @@ describe('Index', () => {
             const instance = new DBMongo({user: 'peter', pass: 'mysecretpassword', db: 'main'});
             const instance2 = new DBMongo({user: 'peter', pass: 'mysecretpassword', db: 'main'});
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -485,7 +491,7 @@ describe('Index', () => {
             const instance2 = new DBMongo({host: '127.0.0.1:8082', user: 'peter', pass: 'thisistrulysecret', db: 'main'});
             assert.equal(instance.uid, 'mongodb:355260832');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -494,7 +500,7 @@ describe('Index', () => {
             const instance2 = new DBMongo({host: '127.0.0.1:8082', user: 'jake', pass: 'thisistrulysecret', db: 'main'});
             assert.equal(instance.uid, 'mongodb:669723387');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -503,7 +509,7 @@ describe('Index', () => {
             const instance2 = new DBMongo({host: '127.0.0.1:8082', user: 'admin', pass: 'rot', db: 'main'});
             assert.equal(instance.uid, 'mongodb:2773005600');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -512,7 +518,7 @@ describe('Index', () => {
             const instance2 = new DBMongo({host: '127.0.0.1:8082', user: 'admin', pass: 'root', auth_db: 'someother', db: 'main'});
             assert.equal(instance.uid, 'mongodb:2773005600');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -521,7 +527,7 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'identity'});
             assert.equal(instance.uid, 'mongodb:2283077747');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -530,7 +536,7 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'main', protocol: 'mongodb'});
             assert.equal(instance.uid, 'mongodb:703732625');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -539,7 +545,7 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', replset: 'cluster2', db: 'main'});
             assert.equal(instance.uid, 'mongodb:1638644854');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -557,7 +563,7 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'main', pool_size: 25});
             assert.equal(instance.uid, 'mongodb:2283077747');
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -566,7 +572,7 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'main', read_preference: 'primary'});
             assert.equal(instance.uid, 'mongodb:2283077747');
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -575,7 +581,7 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'main', retry_reads: false});
             assert.equal(instance.uid, 'mongodb:2283077747');
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -584,7 +590,7 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'main', retry_writes: false});
             assert.equal(instance.uid, 'mongodb:2283077747');
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated'], ['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -628,7 +634,7 @@ describe('Index', () => {
             //  @ts-ignore
             app.isDebugEnabled = 'bla';
             assert.equal(app.isConnected, false);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -638,7 +644,7 @@ describe('Index', () => {
         });
 
         it('Should still be false if connect fails due to throwing', async () => {
-            const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main'});
+            const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main', debug: true});
             MockClient.setConnectMode('throw');
             let val:any = false;
             try {
@@ -657,7 +663,7 @@ describe('Index', () => {
         });
 
         it('Should still be false if connect fails due to not returning a valid client', async () => {
-            const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main'});
+            const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main', debug: true});
             MockClient.setConnectMode('wrongret');
             let val:any = false;
             try {
@@ -692,11 +698,7 @@ describe('Index', () => {
             MockClient.setConnectMode('success');
             MockClient.setDbMode('success');
             await app.connect();
-            assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-            ]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls.length, 2);
             assert.deepEqual(MockClient.calls, [
                 {key: 'connect', params: {
@@ -728,15 +730,15 @@ describe('Index', () => {
             const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main'});
             //  @ts-ignore
             app.isDebugEnabled = 'bla';
-            assert.equal(app.isDebugEnabled, true);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.equal(app.isDebugEnabled, false);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
-        it('Should by default be true', () => {
+        it('Should by default be false', () => {
             const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main'});
-            assert.equal(app.isDebugEnabled, true);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.equal(app.isDebugEnabled, false);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls, []);
         });
 
@@ -1295,7 +1297,7 @@ describe('Index', () => {
         });
 
         it('Should throw if connect fails due to mongo internals throwing', async () => {
-            const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main'});
+            const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main', debug: true});
             MockClient.setConnectMode('throw');
             let val:any = false;
             try {
@@ -1313,7 +1315,7 @@ describe('Index', () => {
         });
 
         it('Should throw if connect fails due to not returning a valid client', async () => {
-            const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main'});
+            const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main', debug: true});
             MockClient.setConnectMode('wrongret');
             let val:any = false;
             try {
@@ -1331,7 +1333,7 @@ describe('Index', () => {
         });
 
         it('Should throw if connect fails due to call to db failing for mongo internals', async () => {
-            const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main'});
+            const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main', debug: true});
             MockClient.setConnectMode('success');
             MockClient.setDbMode('throw');
             let val:any = false;
@@ -1370,11 +1372,7 @@ describe('Index', () => {
             MockClient.setDbMode('success');
             const db = await app.connect();
             assert.ok(db instanceof Db);
-            assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-            ]);
+            assert.deepEqual(mockConsoleInfo.calls, []);
             assert.deepEqual(MockClient.calls.length, 2);
             assert.deepEqual(MockClient.calls, [
                 {key: 'connect', params: {

@@ -71,7 +71,7 @@ Below is an example of such a configuration object for an atlas cluster hosted a
 ```
 
 ## Available Functions
-#### GET uid
+### GET uid :string
 Getter for a hashed signature of the mongo instance, this can be used for internal systems working with factory-style approaches to ensure only one
 connection pool is created for a particular configuration.
 
@@ -85,7 +85,7 @@ console.info(instance.uid); // 'mongodb:2283077747'
 Take note: Only certain properties of the configuration are taken into account for hashing of the signature. These properties are: `protocol`, `user`,
 `pass`, `host`, `auth_db`, `replset`.
 
-#### GET isConnected
+### GET isConnected :boolean
 Whether or not the mongo instance is successfully connected and the pool is operational.
 
 Example:
@@ -100,8 +100,8 @@ await instance.connect();
 console.info(instance.isConnected); // true
 ```
 
-#### GET isDebugEnabled
-Whether or not the instance has debug enabled.
+### GET isDebugEnabled :boolean
+Whether or not the instance has debug enabled. By default debug is not enabled.
 
 ```typescript
 import Mongo from '@valkyriestudios/mongo';
@@ -114,29 +114,110 @@ const instance2 = new Mongo({user: 'admin', pass: 'root', db: 'main', read_prefe
 console.info(instance2.isDebugEnabled); // true
 ```
 
-#### bootstrap
+#### bootstrap (structure?StructureCollection[]):Promise<void>
 TODO
 
-#### connect
+#### connect ():Promise<Db>
+Establish connection to mongodb using the instance configuration.
+
+Take Note:
+- This **will not** establish multiple connections if a client pool already exists, as such this can be called safely multiple times.
+- This **will throw** if the instance fails to acquire a connection
+- Most operations handle calling `.connect()` behind the scenes, as such you will not need to use this in most real-world scenarios
+- This **can be useful** to run a connectivity test when initializing an application as part of a middleware chain.
+
+
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.connect();
+```
+
+#### hasCollection (collection:string):Promise<boolean>
+Verify whether or not a collection exists on the database the instance is configured for. Returns true if the collection exists and false if it
+doesn't.
+
+For example, to test whether or not a collection called 'sales_2023' exists we can do the following:
+```typescript
+import MyMongo from './Mongo';
+
+const exists = await MyMongo.hasCollection('sales_2023'); 
+console.info(exists ? 'exists' : 'does not exist');
+```
+
+Let's say we wanted to create the 'sales_2023' collection only if it didn't exist:
+```typescript
+import MyMongo from './Mongo';
+
+const exists = await MyMongo.hasCollection('sales_2023');
+if (!exists) await MyMongo.createCollection('sales_2023');
+```
+
+Note: There is no need to call connect prior to this operation as this is handled internally.
+
+#### createCollection (collection:string):Promise<boolean>
+Create a collection on the database.
+
+Let's say we want to create a collection called 'sales_2024':
+```typescript
+import MyMongo from './Mongo';
+
+const created = await MyMongo.createCollection('sales_2024');
+console.info(created ? 'was created' : 'failed to create');
+```
+
+Note: There is no need to call connect prior to this operation as this is handled internally.
+
+#### dropCollection (collection:string):Promise<boolean>
+Drop a collection on the database.
+
+Let's say we want to do some cleanup on our database and no longer need the old 'sales\_2008' collection:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.dropCollection('sales_2008'); 
+```
+
+Note: There is no need to call connect prior to this operation as this is handled internally.
+Note: **⚠️ Careful: This operation removes a collection and is irreversible**
+
+#### hasIndex (collection:string, name:string):Promise<boolean> 
+Verify whether or not an index exists for a particular collection on the database. Returns true if the index exists and false if it
+doesn't.
+
+For example, to test whether or not an index called 'date\_asc' exists on a collection called 'sales\_2023' exists we can do the following:
+```typescript
+import MyMongo from './Mongo';
+
+const exists = await MyMongo.hasIndex('sales_2023', 'date_asc'); 
+console.info(exists ? 'exists' : 'does not exist');
+```
+
+Let's say we wanted to create the 'date\_asc' index on our 'sales\_2023' collection only if it didn't exist:
+```typescript
+import MyMongo from './Mongo';
+
+const exists = await MyMongo.hasIndex('sales_2023', 'date_asc');
+if (!exists) await MyMongo.createIndex('sales_2023', 'date_asc', {date: 1});
+```
+
+Note: There is no need to call connect prior to this operation as this is handled internally.
+
+#### createIndex (collection:string, name:string, spec:{[key:string]:1|-1}, options:CreateIndexesOptions = {}):Promise<boolean>
 TODO
 
-#### hasCollection
-TODO
+#### dropIndex (collection:string, name:string):Promise<boolean>
+Drop an index on a collection on the database
 
-#### createCollection
-TODO
+Let's say we want to do some cleanup on our database and no longer need the 'date\_desc' index on a collection called 'sales\_2008':
+```typescript
+import MyMongo from './Mongo';
 
-#### dropCollection
-TODO
+await MyMongo.dropIndex('sales_2008', 'date_desc'); 
+```
 
-#### hasIndex
-TODO
-
-#### createIndex
-TODO
-
-#### dropIndex
-TODO
+Note: There is no need to call connect prior to this operation as this is handled internally.
+Note: **⚠️ Careful: This operation removes an index, though not irreversible it might harm performance if that index is still in use**
 
 #### query
 TODO

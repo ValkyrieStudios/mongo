@@ -52,7 +52,7 @@ The following is the list of options available for configuration as well as thei
 | **db** | Database to use for the connection pool | yes | |
 | **auth_db** | Authentication Database | | `'admin'` |
 | **replset** | Name of the replica set to use **(defaults to false, pass as string to configure)** | | `false` |
-| **protocol** | Protocol to connect to mongo with, either `mongodb` or `mongodb+srv` **(Set to `mongodb+srv` for Atlas) | | `'mongodb'` |
+| **protocol** | Protocol to connect to mongo with, either `mongodb` or `mongodb+srv` (Set to `mongodb+srv` for Atlas) | | `'mongodb'` |
 | **read_preference** | MongoDB Read Preference (See: https://www.mongodb.com/docs/manual/core/read-preference) | | `'nearest'` |
 | **retry_reads** | Whether or not to retry reads when they fail | | `true` |
 | **retry_writes** | Whether or not to retry writes when they fail | | `true` |
@@ -114,10 +114,10 @@ const instance2 = new Mongo({user: 'admin', pass: 'root', db: 'main', read_prefe
 console.info(instance2.isDebugEnabled); // true
 ```
 
-#### bootstrap (structure?StructureCollection[]):Promise<void>
+### bootstrap (structure?StructureCollection[]):Promise<void>
 TODO
 
-#### connect ():Promise<Db>
+### connect ():Promise<Db>
 Establish connection to mongodb using the instance configuration.
 
 Note:
@@ -133,7 +133,7 @@ import MyMongo from './Mongo';
 await MyMongo.connect();
 ```
 
-#### hasCollection (collection:string):Promise<boolean>
+### hasCollection (collection:string):Promise<boolean>
 Verify whether or not a collection exists on the database the instance is configured for. Returns true if the collection exists and false if it
 doesn't.
 
@@ -155,7 +155,7 @@ if (!exists) await MyMongo.createCollection('sales_2023');
 
 Note: There is no need to call connect prior to this operation as this is handled internally.
 
-#### createCollection (collection:string):Promise<boolean>
+### createCollection (collection:string):Promise<boolean>
 Create a collection on the database.
 
 Let's say we want to create a collection called 'sales_2024':
@@ -168,7 +168,7 @@ console.info(created ? 'was created' : 'failed to create');
 
 Note: There is no need to call connect prior to this operation as this is handled internally.
 
-#### dropCollection (collection:string):Promise<boolean>
+### dropCollection (collection:string):Promise<boolean>
 Drop a collection on the database.
 
 Let's say we want to do some cleanup on our database and no longer need the old 'sales\_2008' collection:
@@ -182,7 +182,7 @@ Note:
 - There is no need to call connect prior to this operation as this is handled internally.
 - **⚠️ Careful: This operation removes a collection and is irreversible**
 
-#### hasIndex (collection:string, name:string):Promise<boolean> 
+### hasIndex (collection:string, name:string):Promise<boolean> 
 Verify whether or not an index exists for a particular collection on the database. Returns true if the index exists and false if it
 doesn't.
 
@@ -204,10 +204,10 @@ if (!exists) await MyMongo.createIndex('sales_2023', 'date_asc', {date: 1});
 
 Note: There is no need to call connect prior to this operation as this is handled internally.
 
-#### createIndex (collection:string, name:string, spec:{[key:string]:1|-1}, options:CreateIndexesOptions = {}):Promise<boolean>
+### createIndex (collection:string, name:string, spec:{[key:string]:1|-1}, options:CreateIndexesOptions = {}):Promise<boolean>
 TODO
 
-#### dropIndex (collection:string, name:string):Promise<boolean>
+### dropIndex (collection:string, name:string):Promise<boolean>
 Drop an index on a collection on the database
 
 Let's say we want to do some cleanup on our database and no longer need the 'date\_desc' index on a collection called 'sales\_2008':
@@ -221,7 +221,7 @@ Note:
 - There is no need to call connect prior to this operation as this is handled internally.
 - **⚠️ Careful: This operation removes an index, though not irreversible it might harm performance if that index is still in use**
 
-#### query (collection:string):Query
+### query (collection:string):Query
 Get a query instance for a specific collection (more on Querying in the secion titled [Querying](#querying)
 
 For example let's say we wanted a query instance for a particular collection to reuse later down the line:
@@ -243,14 +243,21 @@ const user = await qUser.aggregate([
 if (Array.isArray(user) && user.length) await qUser.removeOne({uid: {$eq: user[0].uid}});
 ```
 
+We can of course also use it immediately like so:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.query('users').insertMany([{name: 'Jake'}, {name: 'Bob'}]);
+```
+
 Note:
 - There is no need to call connect prior to this operation as this is handled internally.
 - A query instance can be re-used however many times necessary
 
-#### aggregate
+### aggregate
 TODO
 
-#### close ():Promise<void>
+### close ():Promise<void>
 Closes the client pool
 
 ```typescript
@@ -264,13 +271,13 @@ Note:
 - This will not do anything and simply resolve if the client pool did not exist or was not connected
 
 ## Querying
-#### aggregate
+### aggregate
 TODO
 
-#### removeOne
+### removeOne
 TODO
 
-#### removeMany
+### removeMany
 TODO
 
 ### updateOne

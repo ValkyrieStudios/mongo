@@ -44,7 +44,7 @@ export default class Query {
      * @returns {Promise<Document[]>} Array of documents
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async aggregate (pipeline:Document[], options:AggregateOptions = {}):Promise<Document[]> {
+    async aggregate <T extends Document> (pipeline:Document[], options:AggregateOptions = {}):Promise<T[]> {
         if (!Is.NeArray(pipeline)) throw new Error('MongoQuery@aggregrate: Pipeline should be an array with content');
         if (!Is.Object(options)) throw new Error('MongoQuery@aggregate: Options should be an object');
 
@@ -60,7 +60,7 @@ export default class Query {
             /* Run query */
             const result = await db.collection(this.#col).aggregate(normalized_pipeline, options).toArray();
             if (!Is.Array(result)) throw new Error('Unexpected result');
-            return result;
+            return result as T[];
         } catch (err) {
             throw new Error(`MongoQuery@aggregate: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
         }

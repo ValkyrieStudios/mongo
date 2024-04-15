@@ -19,7 +19,7 @@ import {
     type ReadPreference,
 } from './Types';
 
-export interface MongoFullOptions {
+type MongoFullOptions = {
     /* Whether or not we should debug, this is internal to the library and purely focuses on pool events (defaults to false) */
     debug: boolean;
 

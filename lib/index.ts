@@ -527,7 +527,7 @@ export default class Mongo {
      * @returns {Promise<Document[]>}
      * @throws {Error} When invalid options are passed
      */
-    async aggregate <T extends Document> (collection:string, pipeline:{[key:string]:any}[]):Promise<T[]> {
+    async aggregate <T extends Document> (collection:string, pipeline:Document[]):Promise<T[]> {
         if (!Is.NeString(collection)) throw new Error('Mongo@aggregate: Collection should be a non-empty string');
         if (!Is.NeArray(pipeline)) throw new Error('Mongo@aggregate: Pipeline should be a non-empty array');
 

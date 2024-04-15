@@ -271,28 +271,122 @@ Note:
 - This will not do anything and simply resolve if the client pool did not exist or was not connected
 
 ## Querying
-### aggregate
-TODO
+When using the **query** function on the Mongo instance you get back an instance of @valkyriestudios/mongo/Query. This is a class that is tied to a specific MongoDB collection and opens up crud-functionality in a seamless way.
 
-### removeOne
-TODO
+This class could be ephemeral and immediately consumed like so:
+```typescript
+import MyMongo from './Mongo';
 
-### removeMany
-TODO
+await MyMongo.query('users').insertMany([{name: 'Jake'}, {name: 'Bob'}]);
+```
 
-### updateOne
-TODO
+or it could be assigned to a variable and used repeatedly, as such could form the baseline for a model class like below:
+```typescript
+import MyMongo from './Mongo';
 
-### updateMany
-TODO
+let qUser = MyMongo.query('users');
 
-### insertMany
-TODO
+type User {
+    uid:string;
+    first_name:string;
+    last_name:string;
+}
 
-### bulkOps
-TODO
+class User {
+    ...
+    static async one (uid:string):Promise<User|false> {
+        if (typeof uid !== 'string' || !uid.length) return false;
+        
+        const users = await qUser.aggregate<User>([
+            {$match: {uid: {$eq: uid}}},
+            {$limit: 1},
+        ]);
+        return Array.isArray(users) && users.length ? users[0] : false;
+    }
+    ...
+}
+```
+
+The below sections describe all the methods available on a Query instance.
+
+### aggregate (pipeline:Document[], options:AggregateOptions = {}):Promise<Document[]>
+Run an aggregation pipeline against the query instance's collection and return its results as an array of Documents, this method requires you to pass an aggregation pipeline with an optional AggregateOptions parameter.
+
+Check out the following for:
+- an overview of [Mongo Aggregation Pipelines](https://www.mongodb.com/docs/manual/aggregation/).
+- an overview of [AggregateOptions](https://mongodb.github.io/node-mongodb-native/6.5/interfaces/AggregateOptions.html)
+
+Example Usage:
+```typescript
+import MyMongo from './Mongo';
+
+const users = await MyMongo.query('users').aggregate([
+    {$match: {is_active: {$eq: true}}},
+    {$count: 'tally'}
+]);
+```
+
+##### Working with types
+Important to note is that the aggregate method works with generics and allows you to pass a type as the type of the return array.
+
+In the above example the `users` array would be seen as an array of type `Document[]` (Document being the internal mongo driver\'s type), however if you want more advanced typing you can provide your type to the aggregate function directly like in the below example. In this example the `users` array would be typed as `User[]`.
+
+```typescript
+import MyMongo from './Mongo';
+
+type User {
+    uid:string;
+    first_name:string;
+    last_name:string;
+}
+const users = await MyMongo.query('users').aggregate<User>([
+    {$match: {is_active: {$eq: true}}},
+    {$count: 'tally'}
+]);
+```
+
+### removeOne (query:Filter<Document>, options:DeleteOptions = {}):Promise<DeleteResult>
+Remove the **first document matching the provided query**, this method requires you to pass a filter to define which document you want to remove. **By design** this library **does not allow passing an empty query**.
+
+Check out the following for an overview of [DeleteOptions](https://mongodb.github.io/node-mongodb-native/6.5/interfaces/DeleteOptions.html)
+
+Example usage where we are removing a user by uid:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.query('users').removeOne({uid: {$eq: 'd8d61fa6-61e9-4794-84d4-f3280b413dfc'}});
+```
+
+Note: **⚠️ Careful: This operation removes data from a collection and is irreversible**
+
+### removeMany (query:Filter<Document>, options:DeleteOptions = {}):Promise<DeleteResult>
+Remove **all documents matching the provided query**, this method requires you to pass a filter to define which documents you want to remove. **By design** this library **does not allow passing an empty query**.
+
+Check out the following for an overview of [DeleteOptions](https://mongodb.github.io/node-mongodb-native/6.5/interfaces/DeleteOptions.html)
+
+Example usage where we are deleting all inactive users that were deleted before 2020:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.query('users').removeMany({
+    is_active: {$eq: false},
+    deleted_at: {$lt: new Date('2020-01-01T00:00:00.000Z')},
+});
+```
+
+Note: **⚠️ Careful: This operation removes data from a collection and is irreversible**
+
+### updateOne (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions = {}):Promise<UpdateResult>
+Update the first document matching the provided query
+
+### updateMany (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions = {}):Promise<UpdateResult>
+Update all documents matching the provided query
+
+### insertMany (documents:Document[]):Promise<BulkWriteResult>
+Insert one or multiple documents into a specific collection
+
+### bulkOps (fn:BulkOperatorFunction, sorted:boolean = false):Promise<BulkWriteResult>
+Run bulk operations
 
 ## Contributors
 - [Peter Vermeulen](mailto:contact@valkyriestudios.be)
-
-

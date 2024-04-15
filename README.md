@@ -121,8 +121,46 @@ console.info(instance2.isDebugEnabled); // true
 ```
 
 
-### bootstrap (structure?StructureCollection[]):Promise<void>
-TODO
+### bootstrap (structure?CollectionStructure[]):Promise<void>
+Bootstrap is a utility function that is designed to be used as part of the bootstrapping of an application to verify connectivity success.
+
+By default bootstrap will verify that it can connect to mongo using the configuration provided to the instance. It does this in two steps: 1) Connect, 2) close connection. If a connection fails to be made bootstrap will throw an error.
+
+Example bootstrap usage:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.bootstrap();
+```
+
+##### Structural Integrity
+An interesting addition to the bootstrap process is what we like to dub **structural integrity**. Many systems start out small and evolve over time, so does data, indexes, collections that an ecosystem might touch on. In addition to this some systems adhere to the 'single source of truth' principle and are organized around the concept of microservices, where each microservice is in charge of its collections and how they work.
+
+To aid in this bootstrap allows you to provide an array of KV objects that we called 'CollectionStructure', this array allows you to tell bootstrap to ensure the provided collections as well as optional indexes are created and available.
+
+Without diving further into complex lingo here's a simple example of a call to bootstrap ensuring 4 collections called 'users', 'locations', 'events', 'companies' are created as well as their accompanying indexes.
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.bootstrap([
+    {name: 'users', idx: [
+        {name: 'uid_asc', spec: {uid: 1}},
+        {name: 'company_id_asc_uid_asc', spec: {company_id: 1, uid: 1}},
+    ]},
+    {name: 'events', idx: [
+        {name: 'date_asc', spec: {date: 1}, options: {expireAfterSeconds: 5184000}}
+        {name: 'company_id_asc_user_id_asc', spec: {company_id: 1, user_id: 1}},
+    ]},
+    {name: 'companies', idx: [
+        {name: 'uid_asc', spec: {uid: 1}},
+    ]},
+    {name: 'locations'}
+]);
+```
+
+Structural creation through bootstrap **does not remove anything, it only creates**, as such **removing an index from the list will not remove it from the collection**. 
+
+Note: A key benefit of this approach is that you can be 100% sure that whatever is in bootstrap will be aligned between a development, staging and production environment while. 
 
 
 ### connect ():Promise<Db>
@@ -139,6 +177,21 @@ Note:
 import MyMongo from './Mongo';
 
 await MyMongo.connect();
+```
+
+Example of a hypothetical connectivity-test function:
+```typescript
+import MyMongo from './Mongo';
+
+async function checkConnectivity ():Promise<boolean> {
+    try {
+        await MyMongo.connect();
+        await MyMongo.close();
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
 ```
 
 
@@ -218,7 +271,44 @@ Note: There is no need to call connect prior to this operation as this is handle
 
 
 ### createIndex (collection:string, name:string, spec:{[key:string]:1|-1}, options:CreateIndexesOptions = {}):Promise<boolean>
-TODO
+Create an index on a collection on the database, this method requires you to pass the name of the collection, name you wish to call the index and the index specification.
+
+Check out the following page to learn more about [indexing](https://www.mongodb.com/docs/manual/indexes/)
+
+For example, let's say we wanted to create an index called 'date\_asc\_total\_desc' we on a collection called 'sales\_2023' we can do the following:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.createIndex('sales_2023', 'date_asc_total_desc', {date: 1, total: -1});
+```
+
+##### Specification
+In the valkyriestudios/mongo library an index specification is a KV map where each key is the name of the field you wish to index and its value being how you want the field to be ordered in the index (1 for ascending and -1 for descending).
+
+##### CreateIndexesOptions
+The create indexes options allow for more advanced index usage such as partial filter expressions, TTL indexes, etc.
+
+For example: Let's say we wanted to create an index with a partial filter expression on deleted_at that gets created in the background
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.createIndex('sales_2023', 'date_asc_total_desc_nodeleted', {date: 1, total: -1}, {
+    background: true,
+    partialFilterExpression: {deleted_at: {$exists: false}}
+});
+```
+
+Or let's say we wanted to create an index that automatically removes any document older than 90 days:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.createIndex('events', 'date_asc', {date: 1}, {
+    expireAfterSeconds: 7776000,
+    background: true,
+});
+```
+
+Check out the following page to learn more about [CreateIndexesOptions](https://mongodb.github.io/node-mongodb-native/6.5/interfaces/CreateIndexesOptions.html)
 
 
 ### dropIndex (collection:string, name:string):Promise<boolean>
@@ -504,4 +594,5 @@ await MyMongo.query('users').bulkOps(bulk_op => {
 
 
 ## Contributors
-- [Peter Vermeulen](mailto:contact@valkyriestudios.be)
+- [Peter Vermeulen](https://www.linkedin.com/in/petervermeulen1/)
+

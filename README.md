@@ -9,7 +9,9 @@
 
 Simplified mongo wrapper library for JS backends
 
+## Installation
 `npm install @valkyriestudios/mongo`
+
 
 ## Introduction
 This library offers a simple approach to working with mongo instances, offering both direct connectivity as well as ability to connect to Atlas clusters through the mongodb+srv protocol.
@@ -17,6 +19,7 @@ This library offers a simple approach to working with mongo instances, offering 
 Among other defaults it works with connection pooling and applies zlib compression for fast optimized queries. Behind the scenes it works with the latest version of the native mongodb driver and though it does not open up all functionalitites this offers it tries to ensure most real-world scenarios could be handled.
 
 If there's anything missing in this library that you deem a necessity feel free to open a pull request or shoot us a suggestion ;)
+
 
 ## Getting Started
 The best way to get started with this library is by creating an instance of mongo, we suggest creating a class which extends from this library's main export and passing the configuration to its super constructor.
@@ -38,6 +41,7 @@ class MyMongo extends Mongo {
 const instance = new Mongo();
 export default instance;
 ```
+
 
 ###### Options
 The following is the list of options available for configuration as well as their defaults. Most of these options have sensible defaults and as such only a handful are truly required.
@@ -85,6 +89,7 @@ console.info(instance.uid); // 'mongodb:2283077747'
 Take note: Only certain properties of the configuration are taken into account for hashing of the signature. These properties are: `protocol`, `user`,
 `pass`, `host`, `auth_db`, `replset`.
 
+
 ### GET isConnected :boolean
 Whether or not the mongo instance is successfully connected and the pool is operational.
 
@@ -100,6 +105,7 @@ await instance.connect();
 console.info(instance.isConnected); // true
 ```
 
+
 ### GET isDebugEnabled :boolean
 Whether or not the instance has debug enabled. By default debug is not enabled.
 
@@ -114,8 +120,10 @@ const instance2 = new Mongo({user: 'admin', pass: 'root', db: 'main', read_prefe
 console.info(instance2.isDebugEnabled); // true
 ```
 
+
 ### bootstrap (structure?StructureCollection[]):Promise<void>
 TODO
+
 
 ### connect ():Promise<Db>
 Establish connection to mongodb using the instance configuration.
@@ -132,6 +140,7 @@ import MyMongo from './Mongo';
 
 await MyMongo.connect();
 ```
+
 
 ### hasCollection (collection:string):Promise<boolean>
 Verify whether or not a collection exists on the database the instance is configured for. Returns true if the collection exists and false if it
@@ -155,6 +164,7 @@ if (!exists) await MyMongo.createCollection('sales_2023');
 
 Note: There is no need to call connect prior to this operation as this is handled internally.
 
+
 ### createCollection (collection:string):Promise<boolean>
 Create a collection on the database.
 
@@ -167,6 +177,7 @@ console.info(created ? 'was created' : 'failed to create');
 ```
 
 Note: There is no need to call connect prior to this operation as this is handled internally.
+
 
 ### dropCollection (collection:string):Promise<boolean>
 Drop a collection on the database.
@@ -181,6 +192,7 @@ await MyMongo.dropCollection('sales_2008');
 Note:
 - There is no need to call connect prior to this operation as this is handled internally.
 - **⚠️ Careful: This operation removes a collection and is irreversible**
+
 
 ### hasIndex (collection:string, name:string):Promise<boolean> 
 Verify whether or not an index exists for a particular collection on the database. Returns true if the index exists and false if it
@@ -204,8 +216,10 @@ if (!exists) await MyMongo.createIndex('sales_2023', 'date_asc', {date: 1});
 
 Note: There is no need to call connect prior to this operation as this is handled internally.
 
+
 ### createIndex (collection:string, name:string, spec:{[key:string]:1|-1}, options:CreateIndexesOptions = {}):Promise<boolean>
 TODO
+
 
 ### dropIndex (collection:string, name:string):Promise<boolean>
 Drop an index on a collection on the database
@@ -220,6 +234,7 @@ await MyMongo.dropIndex('sales_2008', 'date_desc');
 Note:
 - There is no need to call connect prior to this operation as this is handled internally.
 - **⚠️ Careful: This operation removes an index, though not irreversible it might harm performance if that index is still in use**
+
 
 ### query (collection:string):Query
 Get a query instance for a specific collection (more on Querying in the secion titled [Querying](#querying)
@@ -254,8 +269,10 @@ Note:
 - There is no need to call connect prior to this operation as this is handled internally.
 - A query instance can be re-used however many times necessary
 
+
 ### aggregate
 TODO
+
 
 ### close ():Promise<void>
 Closes the client pool
@@ -269,6 +286,7 @@ Note:
 - Any operation done after the client pool is closed will re-open the client pool
 - This can be useful to run cleanup when shutting down an application
 - This will not do anything and simply resolve if the client pool did not exist or was not connected
+
 
 ## Querying
 When using the **query** function on the Mongo instance you get back an instance of @valkyriestudios/mongo/Query. This is a class that is tied to a specific MongoDB collection and opens up crud-functionality in a seamless way.
@@ -309,6 +327,7 @@ class User {
 
 The below sections describe all the methods available on a Query instance.
 
+
 ### aggregate (pipeline:Document[], options:AggregateOptions = {}):Promise<Document[]>
 Run an aggregation pipeline against the query instance's collection and return its results as an array of Documents, this method requires you to pass an aggregation pipeline with an optional AggregateOptions parameter.
 
@@ -325,6 +344,7 @@ const users = await MyMongo.query('users').aggregate([
     {$count: 'tally'}
 ]);
 ```
+
 
 ##### Working with types
 Important to note is that the aggregate method works with generics and allows you to pass a type as the type of the return array.
@@ -345,6 +365,7 @@ const users = await MyMongo.query('users').aggregate<User>([
 ]);
 ```
 
+
 ### removeOne (query:Filter<Document>, options:DeleteOptions = {}):Promise<DeleteResult>
 Remove the **first document matching the provided query**, this method requires you to pass a filter to define which document you want to remove. **By design** this library **does not allow passing an empty query**.
 
@@ -358,6 +379,7 @@ await MyMongo.query('users').removeOne({uid: {$eq: 'd8d61fa6-61e9-4794-84d4-f328
 ```
 
 Note: **⚠️ Careful: This operation removes data from a collection and is irreversible**
+
 
 ### removeMany (query:Filter<Document>, options:DeleteOptions = {}):Promise<DeleteResult>
 Remove **all documents matching the provided query**, this method requires you to pass a filter to define which documents you want to remove. **By design** this library **does not allow passing an empty query**.
@@ -376,17 +398,83 @@ await MyMongo.query('users').removeMany({
 
 Note: **⚠️ Careful: This operation removes data from a collection and is irreversible**
 
+
 ### updateOne (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions = {}):Promise<UpdateResult>
-Update the first document matching the provided query
+Update the first document matching the provided query, this method requires you to pass a filter to define which document you want to update as well as the update you want to apply to the matched document. **By design** this library **does not allow passing an empty query**.
+
+Check out the following for an overview of [UpdateOptions](https://mongodb.github.io/node-mongodb-native/6.5/interfaces/UpdateOptions.html)
+
+Example usage where we are pushing a record into an array as well as incrementing a counter and patching an updated timestamp:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.query('users').updateOne(
+    {uid: {$eq: '67388bee-e41b-4d26-b514-f66a6e21c3e2'}},
+    {
+        $push: {items: {name: 'Margherita Pizza', quantity: 1, price: 8}},
+        $inc: {total: 8},
+        $set: {updated_at: new Date()},
+    }
+);
+```
+
 
 ### updateMany (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions = {}):Promise<UpdateResult>
-Update all documents matching the provided query
+Update all documents matching the provided query, this method requires you to pass a filter to define which documents you want to update as well as the update you want to apply to the matched documents. **By design** this library **does not allow passing an empty query**.
+
+Check out the following for an overview of [UpdateOptions](https://mongodb.github.io/node-mongodb-native/6.5/interfaces/UpdateOptions.html)
+
+Example usage where we are updating all inactive user records that dont have a deleted\_at timestamp with a deleted\_at timestamp:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.query('users').updateMany(
+    {
+        is_active: {$eq: false}
+        deleted_at: {$exists: false}
+    },
+    {$set: {deleted_at: new Date()}}
+);
+```
+
 
 ### insertMany (documents:Document[]):Promise<BulkWriteResult>
-Insert one or multiple documents into a specific collection
+Insert one or multiple documents into a specific collection, this method requires you to pass an array of documents. Take note that this method will automatically dedupe the provided array. 
+
+Example usage where we are inserting two new users into a user collection:
+```typescript
+import guid     from '@valkyriestudios/utils/hash/guid';
+import MyMongo  from './Mongo';
+
+await MyMongo.query('users').insertMany([
+    {uid: guid(), first_name: 'Peter', last_name: 'Vermeulen', created_at: new Date()},
+    {uid: guid(), first_name: 'Jack', last_name: 'Bauer', created_at: new Date()},
+]);
+```
+
 
 ### bulkOps (fn:BulkOperatorFunction, sorted:boolean = false):Promise<BulkWriteResult>
-Run bulk operations
+Run bulk operations against a collection, this method requires you to pass a function which gets called with a bulk operator, by default this applies an unordered bulk operation, pass true as the second parameter to do an ordered bulk operation. 
+
+For more info on the difference between unordered and ordered bulk operations check out [this article](https://www.mongodb.com/docs/manual/reference/method/js-bulk/).
+
+Example usage where we are running multiple different updates to a series of users:
+```typescript
+import MyMongo from './Mongo';
+
+const users = [
+    {uid: '802bdba3-fd47-4b11-80ce-6d690e9b36b2', update: {first_name: 'Jake'}},
+    {uid: 'beaebc8a-c9c7-4b75-be10-ad604281b6fb', update: {last_name: 'Stevens'}},
+    {uid: 'a5b2bce2-dda7-43fa-bb52-62b33f96f0cd', update: {first_name: 'Bob', last_name: 'Rogers'}}
+];
+
+await MyMongo.query('users').bulkOps(bulk_op => {
+    for (const el of users) {
+        bulk_op.find({uid: el.uid}).updateOne({$set: {...el.update, updated_at: new Date()}});
+    }
+});
+```
+
 
 ## Contributors
 - [Peter Vermeulen](mailto:contact@valkyriestudios.be)

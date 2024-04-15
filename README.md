@@ -270,8 +270,35 @@ Note:
 - A query instance can be re-used however many times necessary
 
 
-### aggregate
-TODO
+### aggregate (collection:string, pipeline:Document[]):Promise<Document[]>
+Utility function which is a shorthand for aggregation queries (see Querying).
+
+Example usage:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.aggregate('users', [
+    {$match: {is_active: {$eq: true}}},
+]);
+```
+
+##### Working with types
+Important to note is that in the same way the aggregate method on our Query class works with generics this one allows you to pass a type as the type of the return array.
+
+Example usage:
+```typescript
+import MyMongo from './Mongo';
+
+type User {
+    uid:string;
+    first_name:string;
+    last_name:string;
+}
+const users = await MyMongo.aggregate<User>('users', [
+    {$match: {is_active: {$eq: true}}},
+    {$limit: 10},
+]);
+```
 
 
 ### close ():Promise<void>
@@ -341,7 +368,7 @@ import MyMongo from './Mongo';
 
 const users = await MyMongo.query('users').aggregate([
     {$match: {is_active: {$eq: true}}},
-    {$count: 'tally'}
+    {$limit: 10},
 ]);
 ```
 

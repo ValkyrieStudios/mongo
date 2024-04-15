@@ -60,15 +60,15 @@ export interface MongoFullOptions {
 /* Required mongo options */
 export type MongoOptions = Partial<MongoFullOptions> & Required<Pick<MongoFullOptions, 'user' | 'pass' | 'db'>>;
 
-type StructureCollectionIndexEntry = {
+type CollectionIndexStructure = {
     name:string;
     spec:{[key:string]:1|-1};
     options?:CreateIndexesOptions;
 }
 
-type StructureCollection = {
+type CollectionStructure = {
     name:string;
-    idx?: StructureCollectionIndexEntry[];
+    idx?: CollectionIndexStructure[];
 }
 
 /**
@@ -81,13 +81,13 @@ Validator.extendEnum({
     valkyrie_mongo_enum_index_val: [-1, 1],
 });
 
-Validator.extendSchema<StructureCollectionIndexEntry>('valkyrie_mongo_structure_collection_index', {
+Validator.extendSchema<CollectionIndexStructure>('valkyrie_mongo_structure_collection_index', {
     name: 'string_ne|min:1|max:128',
     spec: '{min:1}valkyrie_mongo_enum_index_val',
     options: '?object_ne',
 });
 
-const vStructureCollection = new Validator<StructureCollection>({
+const vCollectionStructure = new Validator<CollectionStructure>({
     name    : 'string_ne|min:1|max:128',
     idx     : '?[unique]valkyrie_mongo_structure_collection_index',
 });
@@ -110,13 +110,13 @@ const vOptions = new Validator<MongoFullOptions>({
 /**
  * Validates structure passed to check
  *
- * @param {StructureCollection[]} struct - Structure to validate
+ * @param {CollectionStructure[]} struct - Structure to validate
  * @throws {Error} Throws when structure is invalid
  */
-function validateStructure (structure:StructureCollection[], msg:string) {
+function validateStructure (structure:CollectionStructure[], msg:string) {
     for (const struct of structure) {
         /* Baseline validation of structure */
-        if (!vStructureCollection.check(struct)) throw new Error(`${msg}: All collection objects need to be valid`);
+        if (!vCollectionStructure.check(struct)) throw new Error(`${msg}: All collection objects need to be valid`);
 
         /* If no indexes dont do anything */
         if (!struct.idx || !Is.NeArray(struct.idx)) continue;
@@ -223,9 +223,9 @@ export default class Mongo {
      * @returns {Promise<void>}
      * @throws {Error} If connectivity check fails, structure is invalid or structure creation fails
      */
-    async bootstrap (structure?:StructureCollection[]):Promise<void> {
+    async bootstrap (structure?:CollectionStructure[]):Promise<void> {
         /* Validate collections array */
-        if (Is.NeArray(structure)) validateStructure(structure as StructureCollection[], 'Mongo@bootstrap');
+        if (Is.NeArray(structure)) validateStructure(structure, 'Mongo@bootstrap');
 
         try {
             /* Log */
@@ -237,7 +237,7 @@ export default class Mongo {
             /* If structure is provided, run collection/index builds */
             if (Is.NeArray(structure)) {
                 this.#log('Mongo@bootstrap: ------ Ensuring structure');
-                for (const struct of structure as StructureCollection[]) {
+                for (const struct of structure) {
                     /* Create collection if it doesnt exist */
                     const col_exists = await this.hasCollection(struct.name);
                     if (!col_exists) await this.createCollection(struct.name);

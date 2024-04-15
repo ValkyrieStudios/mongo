@@ -81,7 +81,7 @@ Validator.extendEnum({
     valkyrie_mongo_enum_index_val: [-1, 1],
 });
 
-Validator.extendSchema<CollectionIndexStructure>('valkyrie_mongo_structure_collection_index', {
+Validator.extendSchema<CollectionIndexStructure>('valkyrie_mongo_collection_structure_index', {
     name: 'string_ne|min:1|max:128',
     spec: '{min:1}valkyrie_mongo_enum_index_val',
     options: '?object_ne',
@@ -89,7 +89,7 @@ Validator.extendSchema<CollectionIndexStructure>('valkyrie_mongo_structure_colle
 
 const vCollectionStructure = new Validator<CollectionStructure>({
     name    : 'string_ne|min:1|max:128',
-    idx     : '?[unique]valkyrie_mongo_structure_collection_index',
+    idx     : '?[unique]valkyrie_mongo_collection_structure_index',
 });
 
 const vOptions = new Validator<MongoFullOptions>({
@@ -119,7 +119,7 @@ function validateStructure (structure:CollectionStructure[], msg:string) {
         if (!vCollectionStructure.check(struct)) throw new Error(`${msg}: All collection objects need to be valid`);
 
         /* If no indexes dont do anything */
-        if (!struct.idx || !Is.NeArray(struct.idx)) continue;
+        if (!Is.NeArray(struct.idx)) continue;
 
         /* Ensure indexes have unique names */
         const idx_unique_set:Set<string> = new Set();

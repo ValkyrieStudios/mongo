@@ -1,6 +1,6 @@
 {
     "name": "@valkyriestudios/mongo",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "description": "MongoDB Adapter Library",
     "main": "index.js",
     "scripts": {

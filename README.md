@@ -28,7 +28,7 @@ Below is an example, for sake of the argument, the rest of this document will wo
 ```typescript
 'use strict';
 
-import Mongo  from '@valkyriestudios/mongo';
+import Mongo from '@valkyriestudios/mongo';
 
 class MyMongo extends Mongo {
 
@@ -71,6 +71,7 @@ Below is an example of such a configuration object for an atlas cluster hosted a
     user: 'root',
     pass: 'rootroot',
     db: 'main',
+    protocol: 'mongodb+srv',
 }
 ```
 

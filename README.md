@@ -185,20 +185,17 @@ Note: A key benefit of this approach is that you can be 100% sure that whatever 
 ### connect ():Promise<Db>
 Establish connection to mongodb using the instance configuration.
 
-Note:
-- This **will not** establish multiple connections if a client pool already exists, as such this can be called safely multiple times.
-- This **will throw** if the instance fails to acquire a connection
-- Most operations handle calling `.connect()` behind the scenes, as such you will not need to use this in most real-world scenarios
-- This **can be useful** to run a connectivity test when initializing an application as part of a middleware chain.
-
-
 ```typescript
 import MyMongo from './Mongo';
 
 await MyMongo.connect();
 ```
 
-Example of a hypothetical connectivity-test function:
+Note:
+- This **will not** establish multiple connections if a client pool already exists, as such this can be called safely multiple times.
+- This **will throw** if the instance fails to acquire a connection
+- Most operations handle calling `.connect()` behind the scenes, as such you will not need to use this in most real-world scenarios
+- This **can be useful** to run a connectivity test when initializing an application as part of a middleware chain, here's an example of a hypothetical connectivity-test function:
 ```typescript
 import MyMongo from './Mongo';
 

@@ -22,9 +22,9 @@ If there's anything missing in this library that you deem a necessity, feel free
 
 
 ## Getting Started
-The best way to get started with this library is by creating an instance of MongoDB. We suggest either creating an instance and exporting it or creating a class that extends from this library's main export and passing the configuration to its super constructor.
+The best way(s) to get started is by creating an instance and exporting it or creating a class that extends from this library's main export and passing the configuration to its super constructor (we only suggest this approach if you want to override certain behaviors).
 
-Below is an example of the instance approach, for sake of the argument, the rest of this document will use this 'MyMongo' export:
+Below is an example of the instance approach, for sake of the argument, the rest of this document will use this as the 'MyMongo' export:
 ```typescript
 'use strict';
 
@@ -157,7 +157,7 @@ An interesting addition to the bootstrap process is what we like to dub **struct
 
 To aid in this, the bootstrap method allows you to provide an array of KV objects that we called 'CollectionStructure', this array tells bootstrap to ensure the provided collections as well as optional indexes are created and available.
 
-Without diving further into complex lingo here's a simple example of a call to bootstrap ensuring 4 collections `users`, `locations`, `events` and `companies` as well as their accompanying indexes are created.
+Without diving further into complex lingo here's a simple example of a call to bootstrap ensuring 4 collections `users`, `events`, `companies`, `locations` as well as their accompanying indexes are created.
 ```typescript
 import MyMongo from './Mongo';
 
@@ -179,7 +179,7 @@ await MyMongo.bootstrap([
 
 Structural creation through bootstrap **does not remove anything, it only creates**, as such **removing an index from the list will not remove it from the collection**. 
 
-Note: A key benefit of this approach is that you can be 100% sure that whatever is in bootstrap will be aligned between a development, staging and production environment while. 
+Note: A key benefit of this approach is that you can be 100% sure that whatever is in bootstrap will be aligned between a development, staging and production environment.
 
 
 ### connect ():Promise<Db>

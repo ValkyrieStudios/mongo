@@ -67,7 +67,7 @@ The following is the list of options available for configuration as well as thei
 | Option | Meaning | Required | Default |
 |--------|----------|---------|---------|
 | **debug** | Internal debug option for @valkyriestudios/mongo, logging will be done on system console if enabled | | `false` |
-| **pool_size** | The size of the internal connection pool size, for safety reasons this will be validated as **an integer between 1 and 100** | | `5` |
+| **pool_size** | The size of the internal connection pool, for safety reasons this will be validated as **an integer between 1 and 100** | | `5` |
 | **host** | Host URL to connect to | | `127.0.0.1:27017` |
 | **user** | Name of the user to connect with | yes | |
 | **pass** | Password of the user connecting with | yes | |

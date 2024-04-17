@@ -22,9 +22,19 @@ If there's anything missing in this library that you deem a necessity, feel free
 
 
 ## Getting Started
-The best way to get started with this library is by creating an instance of MongoDB. We suggest creating a class that extends from this library's main export and passing the configuration to its super constructor.
+The best way to get started with this library is by creating an instance of MongoDB. We suggest either creating an instance and exporting it or creating a class that extends from this library's main export and passing the configuration to its super constructor.
 
-Below is an example, for sake of the argument, the rest of this document will work through this example class:
+Below is an example of the instance approach, for sake of the argument, the rest of this document will use this 'MyMongo' export:
+```typescript
+'use strict';
+
+import Mongo from '@valkyriestudios/mongo';
+
+const instance = new Mongo({...});
+export default instance;
+```
+
+By using the class approach you can internally override certain methods like bootstrap (which is further down in the readme) allowing that logic to be centralized, for example:
 ```typescript
 'use strict';
 
@@ -34,6 +44,14 @@ class MyMongo extends Mongo {
 
     constructor () {
         super({... // Configuration options});
+    }
+
+    async bootstrap () {
+        await super.bootstrap([
+            ...
+            {name: 'users', idx: [{name: 'uid_asc', spec: {uid: 1}}]},
+            ...
+        ]);
     }
 
 }

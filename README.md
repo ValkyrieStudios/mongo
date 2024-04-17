@@ -14,17 +14,17 @@ Simplified mongo wrapper library for JS backends
 
 
 ## Introduction
-This library offers a simple approach to working with mongo instances, offering both direct connectivity as well as ability to connect to Atlas clusters through the mongodb+srv protocol.
+This library offers a simple approach to working with MongoDB instances, offering both direct connectivity as well as the ability to connect to Atlas clusters through the mongodb+srv protocol.
 
-Among other defaults it works with connection pooling and applies zlib compression for fast optimized queries. Behind the scenes it works with the latest version of the native mongodb driver and though it does not open up all functionalitites this offers it tries to ensure most real-world scenarios could be handled.
+Among other defaults, it works with connection pooling and applies zlib compression for fast optimized queries. Behind the scenes, it works with the latest version of the native MongoDB driver, and though it does not open up all functionalities this offers, it tries to ensure most real-world scenarios could be handled.
 
-If there's anything missing in this library that you deem a necessity feel free to open a pull request or shoot us a suggestion ;)
+If there's anything missing in this library that you deem a necessity, feel free to open a pull request or shoot us a suggestion ;)
 
 
 ## Getting Started
-The best way to get started with this library is by creating an instance of mongo, we suggest creating a class which extends from this library's main export and passing the configuration to its super constructor.
+The best way to get started with this library is by creating an instance of MongoDB. We suggest creating a class that extends from this library's main export and passing the configuration to its super constructor.
 
-Below is an example, for sake of the argument the rest of this document will work through this example class:
+Below is an example, for sake of the argument, the rest of this document will work through this example class:
 ```typescript
 'use strict';
 
@@ -38,13 +38,13 @@ class MyMongo extends Mongo {
 
 }
 
-const instance = new Mongo();
+const instance = new MyMongo();
 export default instance;
 ```
 
 
 ###### Options
-The following is the list of options available for configuration as well as their defaults. Most of these options have sensible defaults and as such only a handful are truly required.
+The following is the list of options available for configuration as well as their defaults. Most of these options have sensible defaults and as such, only a handful are truly required.
 
 | Option | Meaning | Required | Default |
 |--------|----------|---------|---------|
@@ -136,9 +136,9 @@ await MyMongo.bootstrap();
 ##### Structural Integrity
 An interesting addition to the bootstrap process is what we like to dub **structural integrity**. Many systems start out small and evolve over time, so does data, indexes, collections that an ecosystem might touch on. In addition to this some systems adhere to the 'single source of truth' principle and are organized around the concept of microservices, where each microservice is in charge of its collections and how they work.
 
-To aid in this bootstrap allows you to provide an array of KV objects that we called 'CollectionStructure', this array allows you to tell bootstrap to ensure the provided collections as well as optional indexes are created and available.
+To aid in this, the bootstrap method allows you to provide an array of KV objects that we called 'CollectionStructure', this array tells bootstrap to ensure the provided collections as well as optional indexes are created and available.
 
-Without diving further into complex lingo here's a simple example of a call to bootstrap ensuring 4 collections called 'users', 'locations', 'events', 'companies' are created as well as their accompanying indexes.
+Without diving further into complex lingo here's a simple example of a call to bootstrap ensuring 4 collections `users`, `locations`, `events` and `companies` as well as their accompanying indexes are created.
 ```typescript
 import MyMongo from './Mongo';
 
@@ -275,7 +275,7 @@ Create an index on a collection on the database, this method requires you to pas
 
 Check out the following page to learn more about [indexing](https://www.mongodb.com/docs/manual/indexes/)
 
-For example, let's say we wanted to create an index called 'date\_asc\_total\_desc' we on a collection called 'sales\_2023' we can do the following:
+For example, let's say we wanted to create an index called 'date\_asc\_total\_desc' on a collection called 'sales\_2023' we can do the following:
 ```typescript
 import MyMongo from './Mongo';
 
@@ -408,14 +408,14 @@ Note:
 ## Querying
 When using the **query** function on the Mongo instance you get back an instance of @valkyriestudios/mongo/Query. This is a class that is tied to a specific MongoDB collection and opens up crud-functionality in a seamless way.
 
-This class could be ephemeral and immediately consumed like so:
+An instance of this class could be ephemeral and immediately consumed like so:
 ```typescript
 import MyMongo from './Mongo';
 
 await MyMongo.query('users').insertMany([{name: 'Jake'}, {name: 'Bob'}]);
 ```
 
-or it could be assigned to a variable and used repeatedly, as such could form the baseline for a model class like below:
+or it could be assigned to a variable and used repeatedly, and as such could form the baseline for a model class like below:
 ```typescript
 import MyMongo from './Mongo';
 
@@ -446,7 +446,7 @@ The below sections describe all the methods available on a Query instance.
 
 
 ### aggregate (pipeline:Document[], options:AggregateOptions = {}):Promise<Document[]>
-Run an aggregation pipeline against the query instance's collection and return its results as an array of Documents, this method requires you to pass an aggregation pipeline with an optional AggregateOptions parameter.
+Runs an aggregation pipeline against the query instance's collection and return its results as an array of Documents, this method requires you to pass an aggregation pipeline with an optional AggregateOptions parameter.
 
 Check out the following for:
 - an overview of [Mongo Aggregation Pipelines](https://www.mongodb.com/docs/manual/aggregation/).

@@ -179,7 +179,9 @@ await MyMongo.bootstrap([
 
 Structural creation through bootstrap **does not remove anything, it only creates**, as such **removing an index from the list will not remove it from the collection**. 
 
-Note: A key benefit of this approach is that you can be 100% sure that whatever is in bootstrap will be aligned between a development, staging and production environment.
+Note:
+- A key benefit of this approach is that you can be 100% sure that whatever is in bootstrap will be aligned between a development, staging and production environment.
+- Internally bootstrap makes use of the available `hasCollection`, `createCollection`, `hasIndex`, `createIndex` methods on your instance and as such could be seen as a simple configurable orchestrator
 
 
 ### connect ():Promise<Db>

@@ -34,7 +34,7 @@
     },
     "homepage": "https://github.com/ValkyrieStudios/mongo#README.md",
     "dependencies": {
-        "@valkyriestudios/validator": "^9.5.0",
+        "@valkyriestudios/validator": "^9.6.0",
         "mongodb": "^6.5.0"
     },
     "devDependencies": {

@@ -7,6 +7,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 ### Improved
+- sys: Mongo is now exported as a named export to allow for working with non-modularized setups, for example:
+```typescript
+/* Only available way previously */
+import Mongo from '@valkyriestudios/mongo';
+
+/* Now also possible */
+import {Mongo} from '@valkyriestudios/mongo';
+```
 - **deps**: Upgrade @valkyriestudios/validator to 9.6.0
 
 ## [1.4.0] - 2024-04-16

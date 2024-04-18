@@ -1,9 +1,9 @@
 'use strict';
 
-import Validator    from '@valkyriestudios/validator';
-import Is           from '@valkyriestudios/utils/is';
-import fnv1A        from '@valkyriestudios/utils/hash/fnv1A';
-import Query        from './Query';
+import {Validator}  from '@valkyriestudios/validator';
+import {Is}         from '@valkyriestudios/utils/is';
+import {fnv1A}      from '@valkyriestudios/utils/hash/fnv1A';
+import {Query}      from './Query';
 import {
     MongoClient,
     Db,
@@ -128,7 +128,7 @@ function validateStructure (structure:CollectionStructure[], msg:string) {
     }
 }
 
-export default class Mongo {
+class Mongo {
 
     /* Full configuration */
     #config:MongoFullOptions;
@@ -570,3 +570,5 @@ export default class Mongo {
     }
 
 }
+
+export {Mongo, Mongo as default};

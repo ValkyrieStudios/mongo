@@ -1,8 +1,8 @@
 'use strict';
 
-import Is       from '@valkyriestudios/utils/is';
-import dedupe   from '@valkyriestudios/utils/array/dedupe';
-import Mongo    from './index';
+import {Is}     from '@valkyriestudios/utils/is';
+import {dedupe} from '@valkyriestudios/utils/array/dedupe';
+import {Mongo}  from './index';
 import {
     type AggregateOptions,
     type BulkWriteResult,
@@ -20,7 +20,7 @@ import {
 type BulkOperator = OrderedBulkOperation|UnorderedBulkOperation;
 type BulkOperatorFunction = (operator:BulkOperator) => void;
 
-export default class Query {
+class Query {
 
     /* Instance of @valkyriestudios/mongo the query is running against */
     #instance:Mongo;
@@ -248,3 +248,5 @@ export default class Query {
     }
 
 }
+
+export {Query, Query as default};

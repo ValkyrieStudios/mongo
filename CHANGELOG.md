@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Improved
+- **deps**: Upgrade @valkyriestudios/validator to 9.1.1
+- **deps**: Upgrade @typescript-eslint/eslint-plugin to 7.7.1
+- **deps**: Upgrade @typescript-eslint/parser to 7.7.1
+
 ## [1.5.0] - 2024-04-18
 ### Improved
 - sys: Mongo is now exported as a named export to allow for working with non-modularized setups, for example:

@@ -500,6 +500,25 @@ const users = await MyMongo.query('users').aggregate<User>([
 ]);
 ```
 
+### findOne (query?:Filter<Document>, projection?:Document):Promise<Document|null>
+Find the **first document matching the provided query**, pass an optional projection object to only return specific fields.
+
+Example usage:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.query('users').findOne({uid: {$eq: 'd8d61fa6-61e9-4794-84d4-f3280b413dfc'}});
+```
+
+Example usage with projection:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.query('users').findOne({uid: {$eq: 'd8d61fa6-61e9-4794-84d4-f3280b413dfc'}}, {_id: 0, name: 1, email: 1});
+```
+
+Note: When not passing a query this function will simply return the first document it finds
+
 
 ### removeOne (query:Filter<Document>, options:DeleteOptions = {}):Promise<DeleteResult>
 Remove the **first document matching the provided query**, this method requires you to pass a filter to define which document you want to remove. **By design** this library **does not allow passing an empty query**.
@@ -613,4 +632,3 @@ await MyMongo.query('users').bulkOps(bulk_op => {
 
 ## Contributors
 - [Peter Vermeulen](https://www.linkedin.com/in/petervermeulen1/)
-

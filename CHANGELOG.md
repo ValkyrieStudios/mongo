@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- **feat**: Query@findOne
+
 ### Improved
 - **deps**: Upgrade @valkyriestudios/validator to 9.10.0
 - **deps**: Upgrade @types/node to 20.12.11

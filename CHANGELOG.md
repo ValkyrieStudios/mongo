@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Improved
+- **deps**: Upgrade @valkyriestudios/validator to 9.10.0
+- **deps**: Upgrade @types/node to 20.12.11
+- **deps**: Upgrade mongodb to 6.6.1
+
 ## [1.7.0] - 2024-05-01
 ### Improved
 - **deps**: Upgrade @valkyriestudios/validator to 9.9.0

@@ -1,7 +1,10 @@
 'use strict';
 
 import {Validator}  from '@valkyriestudios/validator';
-import {Is}         from '@valkyriestudios/utils/is';
+import {isNeArray} from '@valkyriestudios/utils/array';
+import {isObject, isNeObject} from '@valkyriestudios/utils/object';
+import {isFunction} from '@valkyriestudios/utils/function/is';
+import {isNotEmptyString} from '@valkyriestudios/utils/string/isNotEmpty';
 import {fnv1A}      from '@valkyriestudios/utils/hash/fnv1A';
 import {Query}      from './Query';
 import {
@@ -119,7 +122,7 @@ function validateStructure (structure:CollectionStructure[], msg:string) {
         if (!vCollectionStructure.check(struct)) throw new Error(`${msg}: All collection objects need to be valid`);
 
         /* If no indexes dont do anything */
-        if (!Is.NeArray(struct.idx)) continue;
+        if (!isNeArray(struct.idx)) continue;
 
         /* Ensure indexes have unique names */
         const idx_unique_set:Set<string> = new Set();
@@ -153,7 +156,7 @@ class Mongo {
 
     constructor (opts:MongoOptions) {
         /* Verify that the options passed are in the form of an object */
-        if (!Is.NeObject(opts)) throw new Error('Mongo@ctor: options should be an object');
+        if (!isNeObject(opts)) throw new Error('Mongo@ctor: options should be an object');
 
         /* Create options, spread passed options on top of defaults */
         const config = {
@@ -225,7 +228,7 @@ class Mongo {
      */
     async bootstrap (structure?:CollectionStructure[]):Promise<void> {
         /* Validate collections array */
-        if (Is.NeArray(structure)) validateStructure(structure, 'Mongo@bootstrap');
+        if (isNeArray(structure)) validateStructure(structure, 'Mongo@bootstrap');
 
         try {
             /* Log */
@@ -235,7 +238,7 @@ class Mongo {
             await this.connect();
 
             /* If structure is provided, run collection/index builds */
-            if (Is.NeArray(structure)) {
+            if (isNeArray(structure)) {
                 this.#log('Mongo@bootstrap: ------ Ensuring structure');
                 for (const struct of structure) {
                     /* Create collection if it doesnt exist */
@@ -243,7 +246,7 @@ class Mongo {
                     if (!col_exists) await this.createCollection(struct.name);
 
                     /* Create indexes if they dont exist */
-                    if (!struct.idx || !Is.NeArray(struct.idx)) continue;
+                    if (!struct.idx || !isNeArray(struct.idx)) continue;
                     for (const idx of struct.idx) {
                         const idx_exists = await this.hasIndex(struct.name, idx.name);
                         if (idx_exists) continue;
@@ -339,7 +342,7 @@ class Mongo {
      * @throws {Error} When invalid options are passed or we fail to connect
      */
     async hasCollection (collection:string):Promise<boolean> {
-        if (!Is.NeString(collection)) throw new Error('Mongo@hasCollection: Collection should be a non-empty string');
+        if (!isNotEmptyString(collection)) throw new Error('Mongo@hasCollection: Collection should be a non-empty string');
 
         /* Connect */
         const db = await this.connect();
@@ -348,9 +351,9 @@ class Mongo {
         const name = collection.trim();
 
         const result = await db.listCollections({name});
-        if (!Is.Object(result) || !Is.Function(result.toArray)) throw new Error('Mongo@hasCollection: Unexpected result');
+        if (!isObject(result) || !isFunction(result.toArray)) throw new Error('Mongo@hasCollection: Unexpected result');
 
-        const exists = Is.NeArray(await result.toArray());
+        const exists = isNeArray(await result.toArray());
 
         /* Log */
         this.#log(`Mongo@hasCollection: ${name} - ${exists ? 'exists' : 'does not exist'}`);
@@ -366,7 +369,7 @@ class Mongo {
      * @throws {Error} When invalid options are passed or we fail to connect
      */
     async createCollection (collection:string):Promise<boolean> {
-        if (!Is.NeString(collection)) throw new Error('Mongo@createCollection: Collection should be a non-empty string');
+        if (!isNotEmptyString(collection)) throw new Error('Mongo@createCollection: Collection should be a non-empty string');
 
         /* Connect */
         const db = await this.connect();
@@ -390,7 +393,7 @@ class Mongo {
      * @throws {Error} When invalid options are passed or we fail to connect
      */
     async dropCollection (collection:string):Promise<boolean> {
-        if (!Is.NeString(collection)) throw new Error('Mongo@dropCollection: Collection should be a non-empty string');
+        if (!isNotEmptyString(collection)) throw new Error('Mongo@dropCollection: Collection should be a non-empty string');
 
         /* Connect */
         const db = await this.connect();
@@ -415,8 +418,8 @@ class Mongo {
      * @throws {Error} When invalid options are passed or we fail to connect
      */
     async hasIndex (collection:string, name:string):Promise<boolean> {
-        if (!Is.NeString(collection)) throw new Error('Mongo@hasIndex: Collection should be a non-empty string');
-        if (!Is.NeString(name)) throw new Error('Mongo@hasIndex: Index Name should be a non-empty string');
+        if (!isNotEmptyString(collection)) throw new Error('Mongo@hasIndex: Collection should be a non-empty string');
+        if (!isNotEmptyString(name)) throw new Error('Mongo@hasIndex: Index Name should be a non-empty string');
 
         /* Connect */
         const db = await this.connect();
@@ -449,15 +452,15 @@ class Mongo {
         spec:{[key:string]:1|-1},
         options:CreateIndexesOptions = {}
     ):Promise<boolean> {
-        if (!Is.NeString(collection)) throw new Error('Mongo@createIndex: Collection should be a non-empty string');
-        if (!Is.NeString(name)) throw new Error('Mongo@createIndex: Index Name should be a non-empty string');
+        if (!isNotEmptyString(collection)) throw new Error('Mongo@createIndex: Collection should be a non-empty string');
+        if (!isNotEmptyString(name)) throw new Error('Mongo@createIndex: Index Name should be a non-empty string');
 
         if (
-            !Is.NeObject(spec) ||
+            !isNeObject(spec) ||
             !Object.values(spec).every(el => el === 1 || el === -1)
         ) throw new Error('Mongo@createIndex: Invalid spec passed');
 
-        if (!Is.Object(options)) throw new Error('Mongo@createIndex: Options should be an object');
+        if (!isObject(options)) throw new Error('Mongo@createIndex: Options should be an object');
 
         /* Connect */
         const db = await this.connect();
@@ -472,7 +475,7 @@ class Mongo {
         /* Create Index */
         const result = await db.collection(col_name).createIndex(spec, {...options, name: idx_name});
 
-        return Is.NeString(result);
+        return isNotEmptyString(result);
     }
 
     /**
@@ -484,8 +487,8 @@ class Mongo {
      * @throws {Error} When invalid options are passed or we fail to connect
      */
     async dropIndex (collection:string, name:string):Promise<boolean> {
-        if (!Is.NeString(collection)) throw new Error('Mongo@dropIndex: Collection should be a non-empty string');
-        if (!Is.NeString(name)) throw new Error('Mongo@dropIndex: Index Name should be a non-empty string');
+        if (!isNotEmptyString(collection)) throw new Error('Mongo@dropIndex: Collection should be a non-empty string');
+        if (!isNotEmptyString(name)) throw new Error('Mongo@dropIndex: Index Name should be a non-empty string');
 
         /* Connect */
         const db = await this.connect();
@@ -514,7 +517,7 @@ class Mongo {
      * @throws {Error} When invalid options are passed
      */
     query (collection:string):Query {
-        if (!Is.NeString(collection)) throw new Error('Mongo@query: Collection should be a non-empty string');
+        if (!isNotEmptyString(collection)) throw new Error('Mongo@query: Collection should be a non-empty string');
 
         return new Query(this, collection.trim());
     }
@@ -528,15 +531,15 @@ class Mongo {
      * @throws {Error} When invalid options are passed
      */
     async aggregate <T extends Document> (collection:string, pipeline:Document[]):Promise<T[]> {
-        if (!Is.NeString(collection)) throw new Error('Mongo@aggregate: Collection should be a non-empty string');
-        if (!Is.NeArray(pipeline)) throw new Error('Mongo@aggregate: Pipeline should be a non-empty array');
+        if (!isNotEmptyString(collection)) throw new Error('Mongo@aggregate: Collection should be a non-empty string');
+        if (!isNeArray(pipeline)) throw new Error('Mongo@aggregate: Pipeline should be a non-empty array');
 
         const s_pipe = [];
         for (const el of pipeline) {
-            if (!Is.NeObject(el)) continue;
+            if (!isNeObject(el)) continue;
             s_pipe.push(el);
         }
-        if (!Is.NeArray(s_pipe)) throw new Error('Mongo@aggregate: Pipeline empty after sanitization');
+        if (!isNeArray(s_pipe)) throw new Error('Mongo@aggregate: Pipeline empty after sanitization');
 
         return new Query(this, collection.trim()).aggregate<T>(s_pipe);
     }

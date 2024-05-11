@@ -2830,7 +2830,7 @@ describe('Index', () => {
 
             const instance = new DBMongo(FULL_VALID_OPTS);
             const out = await instance.query('  mycollection  ').aggregate([{$match: {hello: 'world'}}]);
-            assert.deepEqual(out, ['bla']);
+            assert.deepEqual(out, [{bla: 'bla'}]);
             assert.deepEqual(MockClient.calls, [
                 {key: 'connect', params: FULL_VALID_CONNECT_EXPECTED_PAYLOAD},
                 {key: 'db', params: {name: 'main', opts: {readPreference: 'nearest', retryWrites: true}}},

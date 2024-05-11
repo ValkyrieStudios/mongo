@@ -191,9 +191,182 @@ describe('Query', () => {
             const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('success');
             const out = await instance.aggregate(pipeline, {allowDiskUse: true});
-            assert.deepEqual(out, ['bla']);
+            assert.deepEqual(out, [{bla: 'bla'}]);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {allowDiskUse: true}, pipeline}}]);
+        });
+    });
+
+    describe('findOne', () => {
+        it('Should not be static', () => {
+            /* @ts-ignore */
+            assert.ok(Query.findOne === undefined);
+        });
+
+        it('Should be an async function', () => {
+            const instance = new Query(mdb_instance, 'mycollection');
+            assert.ok(Validator.rules.async_function(instance.findOne));
+            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mock_col.calls, []);
+        });
+
+        it('Should throw when not passed a valid query', async () => {
+            const instance = new Query(mdb_instance, 'mycollection');
+            for (const el of CONSTANTS.NOT_OBJECT) {
+                if (el === undefined) continue;
+
+                let val = false;
+                try {
+                    await instance.findOne(el);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@findOne: If passed, query should be an object');
+                assert.deepEqual(MockClient.calls, []);
+                assert.deepEqual(mock_col.calls, []);
+            }
+        });
+
+        it('Should throw when passed projection that is not an object', async () => {
+            const instance = new Query(mdb_instance, 'mycollection');
+            for (const el of CONSTANTS.NOT_OBJECT) {
+                if (el === undefined) continue;
+                let val = false;
+                try {
+                    await instance.findOne({date: {$gt: new Date()}}, el);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@findOne: If passed, projection should be an object');
+                assert.deepEqual(MockClient.calls, []);
+                assert.deepEqual(mock_col.calls, []);
+            }
+        });
+
+        it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
+            const query = {date: {$gt: new Date()}};
+            const instance = new Query(mdb_instance, 'mycollection');
+            MockClient.setDbMode('wrongret');
+            mock_col.setColUnorderedBop('throw');
+            let val = false;
+            try {
+                await instance.findOne(query);
+            } catch (err) {
+                val = err.message;
+            }
+            assert.equal(val, 'MongoQuery@findOne: Failed - Mongo@connect: Failed to create database instance');
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, []);
+        });
+
+        it('Should throw when passed valid payload but internal aggregate throws', async () => {
+            const query = {date: {$gt: new Date()}};
+            const instance = new Query(mdb_instance, 'mycollection');
+            mock_col.setColAggregate('throw');
+            let val = false;
+            try {
+                await instance.findOne(query);
+            } catch (err) {
+                val = err.message;
+            }
+            assert.equal(val, 'MongoQuery@findOne: Failed - MockCollection@aggregate: Oh No!');
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                {$match: query},
+                {$limit: 1},
+            ]}}]);
+        });
+
+        it('Should throw when passed valid payload but aggregate returns non-array result', async () => {
+            const query = {date: {$gt: new Date()}};
+            const instance = new Query(mdb_instance, 'mycollection');
+            mock_col.setColAggregate('wrongret');
+            let val = false;
+            try {
+                await instance.findOne(query);
+            } catch (err) {
+                val = err.message;
+            }
+            assert.equal(val, 'MongoQuery@findOne: Failed - Unexpected result');
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                {$match: query},
+                {$limit: 1},
+            ]}}]);
+        });
+
+        it('Should not throw and return data when passed valid payload and aggregate returns result', async () => {
+            const query = {date: {$gt: new Date()}};
+            const instance = new Query(mdb_instance, 'mycollection');
+            mock_col.setColAggregate('success');
+            const out = await instance.findOne(query);
+            assert.deepEqual(out, {bla: 'bla'});
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                {$match: query},
+                {$limit: 1},
+            ]}}]);
+        });
+
+        it('Should not throw and return data when passed no query payload and aggregate returns result', async () => {
+            const instance = new Query(mdb_instance, 'mycollection');
+            mock_col.setColAggregate('success');
+            const out = await instance.findOne();
+            assert.deepEqual(out, {bla: 'bla'});
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                {$limit: 1},
+            ]}}]);
+        });
+
+        it('Should not throw and return data when passed empty query payload and aggregate returns result', async () => {
+            const instance = new Query(mdb_instance, 'mycollection');
+            mock_col.setColAggregate('success');
+            const out = await instance.findOne({});
+            assert.deepEqual(out, {bla: 'bla'});
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                {$limit: 1},
+            ]}}]);
+        });
+
+        it('Should not throw and return data when passed empty projection payload and aggregate returns result', async () => {
+            const query = {date: {$gt: new Date()}};
+            const instance = new Query(mdb_instance, 'mycollection');
+            mock_col.setColAggregate('success');
+            const out = await instance.findOne(query, {});
+            assert.deepEqual(out, {bla: 'bla'});
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                {$match: query},
+                {$limit: 1},
+            ]}}]);
+        });
+
+        it('Should not throw and return data when passed projection payload and aggregate returns result', async () => {
+            const query = {date: {$gt: new Date()}};
+            const instance = new Query(mdb_instance, 'mycollection');
+            mock_col.setColAggregate('success');
+            const out = await instance.findOne(query, {_id: 0, name: 1});
+            assert.deepEqual(out, {bla: 'bla'});
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                {$match: query},
+                {$limit: 1},
+                {$project: {_id: 0, name: 1}},
+            ]}}]);
+        });
+
+        it('Should not throw and return data when passed empty query and projection payload and aggregate returns result', async () => {
+            const instance = new Query(mdb_instance, 'mycollection');
+            mock_col.setColAggregate('success');
+            const out = await instance.findOne({}, {_id: 0, name: 1});
+            assert.deepEqual(out, {bla: 'bla'});
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                {$limit: 1},
+                {$project: {_id: 0, name: 1}},
+            ]}}]);
         });
     });
 

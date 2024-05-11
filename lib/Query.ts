@@ -1,7 +1,10 @@
 'use strict';
 
-import {Is}     from '@valkyriestudios/utils/is';
-import {dedupe} from '@valkyriestudios/utils/array/dedupe';
+import {isBoolean} from '@valkyriestudios/utils/boolean/is';
+import {isAsync, isFunction} from '@valkyriestudios/utils/function';
+import {isNotEmptyString} from '@valkyriestudios/utils/string/isNotEmpty';
+import {isObject, isNeObject} from '@valkyriestudios/utils/object';
+import {isArray, isNeArray, dedupe} from '@valkyriestudios/utils/array';
 import {Mongo}  from './index';
 import {
     type AggregateOptions,
@@ -30,7 +33,7 @@ class Query {
 
     constructor (instance:Mongo, col:string) {
         if (!(instance instanceof Mongo)) throw new Error('MongoQuery: Expected instance of Mongo');
-        if (!Is.NeString(col)) throw new Error('MongoQuery: Expected collection to be a non-empty string');
+        if (!isNotEmptyString(col)) throw new Error('MongoQuery: Expected collection to be a non-empty string');
 
         this.#instance  = instance;
         this.#col       = col;
@@ -45,12 +48,12 @@ class Query {
      * @throws {Error} When provided options are invalid or connection fails
      */
     async aggregate <T extends Document> (pipeline:Document[], options:AggregateOptions = {}):Promise<T[]> {
-        if (!Is.NeArray(pipeline)) throw new Error('MongoQuery@aggregrate: Pipeline should be an array with content');
-        if (!Is.Object(options)) throw new Error('MongoQuery@aggregate: Options should be an object');
+        if (!isNeArray(pipeline)) throw new Error('MongoQuery@aggregrate: Pipeline should be an array with content');
+        if (!isObject(options)) throw new Error('MongoQuery@aggregate: Options should be an object');
 
         /* Sanitize pipeline */
-        const normalized_pipeline = dedupe(pipeline.filter(Is.NeObject));
-        if (!Is.NeArray(normalized_pipeline)) throw new Error('MongoQuery@aggregate: Pipeline is empty after sanitization');
+        const normalized_pipeline = dedupe(pipeline.filter(isNeObject));
+        if (!isNeArray(normalized_pipeline)) throw new Error('MongoQuery@aggregate: Pipeline is empty after sanitization');
 
         /* Run pipeline */
         try {
@@ -59,10 +62,45 @@ class Query {
 
             /* Run query */
             const result = await db.collection(this.#col).aggregate(normalized_pipeline, options).toArray();
-            if (!Is.Array(result)) throw new Error('Unexpected result');
+            if (!isArray(result)) throw new Error('Unexpected result');
             return result as T[];
         } catch (err) {
             throw new Error(`MongoQuery@aggregate: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
+        }
+    }
+
+    /**
+     * Find the first document matching the provided query
+     * Take Note: when passing no query it will simply return the first document it finds
+     *
+     * @param {Filter<Document>?} query - Optional Query that matches the document to find
+     * @param {Document?} projection - Optional projection to use, if not passed will return entire object
+     * @returns {Promise<Document|null>} The found document or null
+     * @throws {Error} when provided query or connection fails
+     */
+    async findOne <T extends Document> (query?:Filter<Document>, projection?:Document):Promise<T|null> {
+        if (
+            query !== undefined &&
+            !isObject(query)
+        ) throw new Error('MongoQuery@findOne: If passed, query should be an object');
+
+        if (
+            projection !== undefined &&
+            !isObject(projection)
+        ) throw new Error('MongoQuery@findOne: If passed, projection should be an object');
+
+        try {
+            /* Run query */
+            const result = await this.aggregate<T>([
+                ...isNeObject(query) ? [{$match: query}] : [],
+                {$limit: 1},
+                ...isNeObject(projection) ? [{$project: projection}] : [],
+            ]);
+
+            return isNeArray(result) && isObject(result[0]) ? result[0] : null;
+        } catch (err) {
+            const msg = err instanceof Error ? err.message.replace('MongoQuery@aggregate: Failed - ', '') : 'Unknown Error';
+            throw new Error(`MongoQuery@findOne: Failed - ${msg}`);
         }
     }
 
@@ -75,8 +113,8 @@ class Query {
      * @throws {Error} When provided options are invalid or connection fails
      */
     async removeOne (query:Filter<Document>, options:DeleteOptions = {}):Promise<DeleteResult> {
-        if (!Is.NeObject(query)) throw new Error('MongoQuery@removeOne: Query should be an object with content');
-        if (!Is.Object(options)) throw new Error('MongoQuery@removeOne: Options should be an object');
+        if (!isNeObject(query)) throw new Error('MongoQuery@removeOne: Query should be an object with content');
+        if (!isObject(options)) throw new Error('MongoQuery@removeOne: Options should be an object');
 
         try {
             /* Connect */
@@ -84,7 +122,7 @@ class Query {
 
             /* Run query */
             const result = await db.collection(this.#col).deleteOne(query, options);
-            if (!Is.Object(result)) throw new Error('Unexpected result');
+            if (!isObject(result)) throw new Error('Unexpected result');
             if (!result.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
@@ -101,8 +139,8 @@ class Query {
      * @throws {Error} When provided options are invalid or connection fails
      */
     async removeMany (query:Filter<Document>, options:DeleteOptions = {}):Promise<DeleteResult> {
-        if (!Is.NeObject(query)) throw new Error('MongoQuery@removeMany: Query should be an object with content');
-        if (!Is.Object(options)) throw new Error('MongoQuery@removeMany: Options should be an object');
+        if (!isNeObject(query)) throw new Error('MongoQuery@removeMany: Query should be an object with content');
+        if (!isObject(options)) throw new Error('MongoQuery@removeMany: Options should be an object');
 
         try {
             /* Connect */
@@ -110,7 +148,7 @@ class Query {
 
             /* Run query */
             const result = await db.collection(this.#col).deleteMany(query, options);
-            if (!Is.Object(result)) throw new Error('Unexpected result');
+            if (!isObject(result)) throw new Error('Unexpected result');
             if (!result.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
@@ -128,12 +166,12 @@ class Query {
      * @throws {Error} When provided options are invalid or connection fails
      */
     async updateOne (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions = {}):Promise<UpdateResult> {
-        if (!Is.NeObject(query)) throw new Error('MongoQuery@updateOne: Query should be an object with content');
-        if (!Is.NeObject(data) && !Is.NeArray(data)) throw new Error('MongoQuery@updateOne: Data should be an object/array with content');
-        if (!Is.Object(options)) throw new Error('MongoQuery@updateOne: Options should be an object');
+        if (!isNeObject(query)) throw new Error('MongoQuery@updateOne: Query should be an object with content');
+        if (!isNeObject(data) && !isNeArray(data)) throw new Error('MongoQuery@updateOne: Data should be an object/array with content');
+        if (!isObject(options)) throw new Error('MongoQuery@updateOne: Options should be an object');
 
         /* Check if all entries are at least objects with content when passed an update pipeline */
-        if (Is.Array(data) && !data.every(Is.NeObject)) throw new Error('MongoQuery@updateOne: Data pipeline is invalid');
+        if (isArray(data) && !data.every(isNeObject)) throw new Error('MongoQuery@updateOne: Data pipeline is invalid');
 
         try {
             /* Connect */
@@ -141,7 +179,7 @@ class Query {
 
             /* Run query */
             const result = await db.collection(this.#col).updateOne(query, data, options);
-            if (!Is.Object(result)) throw new Error('Unexpected result');
+            if (!isObject(result)) throw new Error('Unexpected result');
             if (!result.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
@@ -159,12 +197,12 @@ class Query {
      * @throws {Error} When provided options are invalid or connection fails
      */
     async updateMany (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions = {}):Promise<UpdateResult> {
-        if (!Is.NeObject(query)) throw new Error('MongoQuery@updateMany: Query should be an object with content');
-        if (!Is.NeObject(data) && !Is.NeArray(data)) throw new Error('MongoQuery@updateMany: Data should be an object/array with content');
-        if (!Is.Object(options)) throw new Error('MongoQuery@updateMany: Options should be an object');
+        if (!isNeObject(query)) throw new Error('MongoQuery@updateMany: Query should be an object with content');
+        if (!isNeObject(data) && !isNeArray(data)) throw new Error('MongoQuery@updateMany: Data should be an object/array with content');
+        if (!isObject(options)) throw new Error('MongoQuery@updateMany: Options should be an object');
 
         /* Check if all entries are at least objects with content when passed an update pipeline */
-        if (Is.Array(data) && !data.every(Is.NeObject)) throw new Error('MongoQuery@updateMany: Data pipeline is invalid');
+        if (isArray(data) && !data.every(isNeObject)) throw new Error('MongoQuery@updateMany: Data pipeline is invalid');
 
         try {
             /* Connect */
@@ -172,7 +210,7 @@ class Query {
 
             /* Run query */
             const result = await db.collection(this.#col).updateMany(query, data, options);
-            if (!Is.Object(result)) throw new Error('Unexpected result');
+            if (!isObject(result)) throw new Error('Unexpected result');
             if (!result.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
@@ -188,17 +226,17 @@ class Query {
      * @throws {Error} When provided options are invalid or connection fails
      */
     async insertMany (documents:Document[]):Promise<BulkWriteResult> {
-        if (!Is.NeArray(documents)) throw new Error('MongoQuery@insertMany: Documents should be an array with content');
+        if (!isNeArray(documents)) throw new Error('MongoQuery@insertMany: Documents should be an array with content');
 
-        const normalized_documents = dedupe(documents.filter(Is.NeObject));
-        if (!Is.NeArray(normalized_documents)) throw new Error('MongoQuery@insertMany: Documents is empty after sanitization');
+        const normalized_documents = dedupe(documents.filter(isNeObject));
+        if (!isNeArray(normalized_documents)) throw new Error('MongoQuery@insertMany: Documents is empty after sanitization');
 
         try {
             const result = await this.bulkOps(operator => {
                 for (const el of normalized_documents) operator.insert(el);
             }, false);
             if (
-                !Is.Object(result) ||
+                !isObject(result) ||
                 result.insertedCount !== normalized_documents.length
             ) throw new Error('Not all documents were inserted');
 
@@ -217,8 +255,8 @@ class Query {
      * @throws {Error} When provided options are invalid or connection fails
      */
     async bulkOps (fn:BulkOperatorFunction, sorted:boolean = false):Promise<BulkWriteResult> {
-        if (!Is.Function(fn)) throw new Error('MongoQuery@bulkOps: Fn should be a function');
-        if (!Is.Boolean(sorted)) throw new Error('MongoQuery@bulkOps: Sorted should be a boolean');
+        if (!isFunction(fn)) throw new Error('MongoQuery@bulkOps: Fn should be a function');
+        if (!isBoolean(sorted)) throw new Error('MongoQuery@bulkOps: Sorted should be a boolean');
 
         try {
             /* Connect */
@@ -228,10 +266,10 @@ class Query {
             const bulk_operator = sorted === false
                 ? db.collection(this.#col).initializeUnorderedBulkOp()
                 : db.collection(this.#col).initializeOrderedBulkOp();
-            if (!Is.Object(bulk_operator) || !Is.Function(bulk_operator.execute)) throw new Error('Not able to acquire bulk operation');
+            if (!isObject(bulk_operator) || !isFunction(bulk_operator.execute)) throw new Error('Not able to acquire bulk operation');
 
             /* Pass bulk operator to fn */
-            if (!Is.AsyncFunction(fn)) {
+            if (!isAsync(fn)) {
                 fn(bulk_operator);
             } else {
                 await fn(bulk_operator);
@@ -239,7 +277,7 @@ class Query {
 
             /* Execute operations */
             const result = await bulk_operator.execute();
-            if (!Is.Object(result)) throw new Error('Unexpected result');
+            if (!isObject(result)) throw new Error('Unexpected result');
 
             return result;
         } catch (err) {

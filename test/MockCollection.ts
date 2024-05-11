@@ -24,23 +24,23 @@ export default class MockCollection extends Collection {
     #calls:any[] = [];
 
     #col_aggregate:MockMode = 'success';
-    
+
     #col_delete_one:MockMode = 'success';
-    
+
     #col_delete_many:MockMode = 'success';
-    
+
     #col_update_one:MockMode = 'success';
-    
+
     #col_update_many:MockMode = 'success';
-    
+
     #col_unordered_bop:MockMode = 'success';
-    
+
     #col_ordered_bop:MockMode = 'success';
 
     constructor (col:string) {
         /* @ts-ignore */
         super({databaseName: 'main', client: {}}, col, {});
-        
+
         this.#col = col;
     }
 
@@ -52,12 +52,12 @@ export default class MockCollection extends Collection {
 
         if (this.#col_aggregate === 'wrongret') return {toArray: async () => false};
 
-        return {toArray: async () => ['bla']};
+        return {toArray: async () => [{bla: 'bla'}]};
     }
 
     async deleteOne (query:Filter<Document>, options:DeleteOptions):Promise<DeleteResult> {
         this.#calls.push({key: 'deleteOne', params: {query, options}});
-        
+
         /* @ts-ignore */
         if (this.#col_delete_one === 'throw') throw new Error('MockCollection@deleteOne: Oh No!');
 

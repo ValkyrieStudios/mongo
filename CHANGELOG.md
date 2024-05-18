@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Improved
+- **deps**: Upgrade @valkyriestudios/validator to 9.11.0
+- **deps**: Upgrade @types/node to 20.12.12
+- **deps**: Upgrade @typescript-esint/eslint-plugin to 7.9.0
+- **deps**: Upgrade @typescript-eslint/parser to 7.9.0
+- **deps**: Upgrade mongodb to 6.6.2
+
 ## [1.8.0] - 2024-05-11
 ### Added
 - **feat**: Query@findOne

@@ -1,6 +1,6 @@
 {
     "name": "@valkyriestudios/mongo",
-    "version": "1.13.0",
+    "version": "1.14.0",
     "description": "MongoDB Adapter Library",
     "main": "index.js",
     "scripts": {
@@ -34,7 +34,7 @@
     },
     "homepage": "https://github.com/ValkyrieStudios/mongo#README.md",
     "dependencies": {
-        "@valkyriestudios/validator": "^9.19.0",
+        "@valkyriestudios/validator": "^9.20.0",
         "mongodb": "^6.8.0"
     },
     "devDependencies": {

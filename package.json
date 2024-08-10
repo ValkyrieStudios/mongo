@@ -34,8 +34,8 @@
     },
     "homepage": "https://github.com/ValkyrieStudios/mongo#README.md",
     "dependencies": {
-        "@valkyriestudios/utils": "^12.18.0",
-        "@valkyriestudios/validator": "^9.20.0",
+        "@valkyriestudios/utils": "^12.19.0",
+        "@valkyriestudios/validator": "^9.22.0",
         "mongodb": "^6.8.0"
     },
     "devDependencies": {

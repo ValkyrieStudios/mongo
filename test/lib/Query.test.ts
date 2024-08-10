@@ -455,7 +455,7 @@ describe('Query', () => {
             } catch (err) {
                 val = err.message;
             }
-            assert.equal(val, 'MongoQuery@removeOne: Failed - Unexpected result');
+            assert.equal(val, 'MongoQuery@removeOne: Failed - Unacknowledged');
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'deleteOne', params: {options: {}, query}}]);
         });
@@ -571,7 +571,7 @@ describe('Query', () => {
             } catch (err) {
                 val = err.message;
             }
-            assert.equal(val, 'MongoQuery@removeMany: Failed - Unexpected result');
+            assert.equal(val, 'MongoQuery@removeMany: Failed - Unacknowledged');
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'deleteMany', params: {options: {}, query}}]);
         });
@@ -729,7 +729,7 @@ describe('Query', () => {
             } catch (err) {
                 val = err.message;
             }
-            assert.equal(val, 'MongoQuery@updateOne: Failed - Unexpected result');
+            assert.equal(val, 'MongoQuery@updateOne: Failed - Unacknowledged');
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'updateOne', params: {options: {upsert: true}, query, data: {$inc: {count: 1}}}}]);
         });
@@ -887,7 +887,7 @@ describe('Query', () => {
             } catch (err) {
                 val = err.message;
             }
-            assert.equal(val, 'MongoQuery@updateMany: Failed - Unexpected result');
+            assert.equal(val, 'MongoQuery@updateMany: Failed - Unacknowledged');
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'updateMany', params: {options: {upsert: true}, query, data: {$inc: {count: 1}}}}]);
         });

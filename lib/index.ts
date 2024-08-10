@@ -179,10 +179,8 @@ class Mongo {
         this.#config = config;
 
         /* Create connection uri */
-        this.#uri = [
-            `${this.#config.protocol}://${this.#config.user}:${this.#config.pass}@${this.#config.host}/${this.#config.auth_db}`,
-            this.#config.replset ? `?replicaSet=${this.#config.replset}` : false,
-        ].filter(el => el !== false).join('');
+        this.#uri = `${this.#config.protocol}://${this.#config.user}:${this.#config.pass}@${this.#config.host}/${this.#config.auth_db}`;
+        if (this.#config.replset) this.#uri += `?replicaSet=${this.#config.replset}`;
 
         /* Create instance uid */
         this.#uid = `mongodb:${fnv1A({uri: this.#uri, db: this.#config.db})}`;

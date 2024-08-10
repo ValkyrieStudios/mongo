@@ -52,8 +52,8 @@ class Query {
         if (!isObject(options)) throw new Error('MongoQuery@aggregate: Options should be an object');
 
         /* Sanitize pipeline */
-        const normalized_pipeline = dedupe(pipeline.filter(isNeObject));
-        if (!isNeArray(normalized_pipeline)) throw new Error('MongoQuery@aggregate: Pipeline is empty after sanitization');
+        const normalized_pipeline = dedupe(pipeline, {filter_fn: isNeObject});
+        if (!normalized_pipeline.length) throw new Error('MongoQuery@aggregate: Pipeline is empty after sanitization');
 
         /* Run pipeline */
         try {
@@ -122,8 +122,7 @@ class Query {
 
             /* Run query */
             const result = await db.collection(this.#col).deleteOne(query, options);
-            if (!isObject(result)) throw new Error('Unexpected result');
-            if (!result.acknowledged) throw new Error('Unacknowledged');
+            if (!result?.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
             throw new Error(`MongoQuery@removeOne: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
@@ -148,8 +147,7 @@ class Query {
 
             /* Run query */
             const result = await db.collection(this.#col).deleteMany(query, options);
-            if (!isObject(result)) throw new Error('Unexpected result');
-            if (!result.acknowledged) throw new Error('Unacknowledged');
+            if (!result?.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
             throw new Error(`MongoQuery@removeMany: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
@@ -179,8 +177,7 @@ class Query {
 
             /* Run query */
             const result = await db.collection(this.#col).updateOne(query, data, options);
-            if (!isObject(result)) throw new Error('Unexpected result');
-            if (!result.acknowledged) throw new Error('Unacknowledged');
+            if (!result?.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
             throw new Error(`MongoQuery@updateOne: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
@@ -210,8 +207,7 @@ class Query {
 
             /* Run query */
             const result = await db.collection(this.#col).updateMany(query, data, options);
-            if (!isObject(result)) throw new Error('Unexpected result');
-            if (!result.acknowledged) throw new Error('Unacknowledged');
+            if (!result?.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
             throw new Error(`MongoQuery@updateMany: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
@@ -228,17 +224,16 @@ class Query {
     async insertMany (documents:Document[]):Promise<BulkWriteResult> {
         if (!isNeArray(documents)) throw new Error('MongoQuery@insertMany: Documents should be an array with content');
 
-        const normalized_documents = dedupe(documents.filter(isNeObject));
+        const normalized_documents = dedupe(documents, {filter_fn: isNeObject});
         if (!isNeArray(normalized_documents)) throw new Error('MongoQuery@insertMany: Documents is empty after sanitization');
 
         try {
             const result = await this.bulkOps(operator => {
-                for (const el of normalized_documents) operator.insert(el);
+                for (let i = 0; i < normalized_documents.length; i++) {
+                    operator.insert(normalized_documents[i]);
+                }
             }, false);
-            if (
-                !isObject(result) ||
-                result.insertedCount !== normalized_documents.length
-            ) throw new Error('Not all documents were inserted');
+            if (result?.insertedCount !== normalized_documents.length) throw new Error('Not all documents were inserted');
 
             return result;
         } catch (err) {
@@ -263,9 +258,7 @@ class Query {
             const db = await this.#instance.connect();
 
             /* Instantiate bulk operator */
-            const bulk_operator = sorted === false
-                ? db.collection(this.#col).initializeUnorderedBulkOp()
-                : db.collection(this.#col).initializeOrderedBulkOp();
+            const bulk_operator = db.collection(this.#col)[sorted === false ? 'initializeUnorderedBulkOp' : 'initializeOrderedBulkOp']();
             if (!isObject(bulk_operator) || !isFunction(bulk_operator.execute)) throw new Error('Not able to acquire bulk operation');
 
             /* Pass bulk operator to fn */

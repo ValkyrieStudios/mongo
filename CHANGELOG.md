@@ -7,6 +7,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 ### Improved
+- **perf**: Minor performance improvement of insertMany by working with new options in valkyrie utils regarding dedupe filtering
+- **perf**: Minor performance improvement of aggregate by working with new options in valkyrie utils regarding dedupe filtering
+- **perf**: Minor performance improvements thanks to using chain operators
 - **deps**: Upgrade @valkyriestudios/utils to 12.19.0
 - **deps**: Upgrade @valkyriestudios/validator to 9.22.0
 

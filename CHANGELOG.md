@@ -10,6 +10,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - **deps**: Upgrade @valkyriestudios/utils to 12.20.0
 - **deps**: Upgrade @valkyriestudios/validator to 9.23.0
 - **deps**: Upgrade @types/node to 22.4.0
+- **sys**: Automated test runs are now run against node 18.x, 20.x and 22.x instead of only 20.x
 
 ## [1.16.0] - 2024-08-10
 ### Improved

@@ -57,7 +57,7 @@ export default instance;
 ```
 
 
-###### Options (Host connection)
+#### Options (Host connection)
 The following is the list of options available for configuration as well as their defaults. Most of these options have sensible defaults and as such, only a handful are truly required.
 
 | Option | Meaning | Required | Default |
@@ -91,7 +91,7 @@ Below is an example of such a configuration object for an atlas cluster hosted a
 }
 ```
 
-###### Options (URI connection)
+#### Options (URI connection)
 The following is the list of options available for configuration as well as their defaults. Most of these options have sensible defaults and as such, only a handful are truly required.
 
 | Option | Meaning | Required | Default |

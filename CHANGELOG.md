@@ -7,6 +7,27 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 ### Added
+- **feat**: Added support for uri-based connections
+```typescript
+/* Pass uri to connect */
+const mongo = new Mongo({uri: 'mongodb+srv://.../myDb?...'});
+
+/* Pass directly from process, for example */
+const mongo = new Mongo({uri: process.env.MONGO_URI});
+
+/* Important Note, IF the uri does not have a db as part of its path it NEEDS to be passed as part of the config */
+const mongo = new Mongo({uri: process.env.MONGO_URI, db: 'myDb'});
+
+/* You can also pass additional options */
+const mongo = new Mongo({
+    uri: process.env.MONGO_URI,
+    db: 'myDb',
+    pool_size: 20,
+    debug: true,
+});
+```
+- **feat**: You can now pass `connect_timeout_ms` as a config variable when instantiating a Mongo instance (default remains at `10000` milliseconds)
+- **feat**: You can now pass `socket_timeout_ms` as a config variable when instantiating a Mongo instance (default remains at `0` milliseconds)
 - **deps**: typescript-eslint 8.8.0 (dev deps for eslint 9.x)
 
 ### Improved

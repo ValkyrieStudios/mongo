@@ -1,5 +1,3 @@
-'use strict';
-
 import {Validator}  from '@valkyriestudios/validator';
 import {isNeArray} from '@valkyriestudios/utils/array';
 import {isObject, isNeObject} from '@valkyriestudios/utils/object';
@@ -151,7 +149,7 @@ class Mongo {
     /* Internal log function */
     #log = (...args:any[]) => {
         if (!this.#config.debug) return;
-        console.info(...args);
+        console.info(...args); /* eslint-disable-line no-console */
     };
 
     constructor (opts:MongoOptions) {
@@ -176,7 +174,7 @@ class Mongo {
         if (!vOptions.check(config)) throw new Error('Mongo@ctor: options are invalid');
 
         /* Options are valid */
-        this.#config = config;
+        this.#config = config as MongoFullOptions;
 
         /* Create connection uri */
         this.#uri = `${this.#config.protocol}://${this.#config.user}:${this.#config.pass}@${this.#config.host}/${this.#config.auth_db}`;
@@ -317,7 +315,7 @@ class Mongo {
             if (!(this.#mongo_database instanceof Db)) throw new Error('Mongo@connect: Failed to create database instance');
 
             /* Log */
-            if (this.isDebugEnabled) console.info('Mongo@connect: Connection established');
+            if (this.isDebugEnabled) console.info('Mongo@connect: Connection established'); /* eslint-disable-line no-console */
 
             return this.#mongo_database;
         } catch (err) {
@@ -502,7 +500,7 @@ class Mongo {
         try {
             await db.collection(col_name).dropIndex(idx_name);
             return true;
-        } catch (err) {
+        } catch {
             return false;
         }
     }

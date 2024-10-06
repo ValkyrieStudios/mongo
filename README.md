@@ -26,8 +26,6 @@ The best way(s) to get started is by creating an instance and exporting it or cr
 
 Below is an example of the instance approach, for sake of the argument, the rest of this document will use this as the 'MyMongo' export:
 ```typescript
-'use strict';
-
 import Mongo from '@valkyriestudios/mongo';
 
 const instance = new Mongo({...});
@@ -36,8 +34,6 @@ export default instance;
 
 By using the class approach you can internally override certain methods like bootstrap (which is further down in the readme) allowing that logic to be centralized, for example:
 ```typescript
-'use strict';
-
 import Mongo from '@valkyriestudios/mongo';
 
 class MyMongo extends Mongo {
@@ -177,7 +173,7 @@ await MyMongo.bootstrap([
 ]);
 ```
 
-Structural creation through bootstrap **does not remove anything, it only creates**, as such **removing an index from the list will not remove it from the collection**. 
+Structural creation through bootstrap **does not remove anything, it only creates**, as such **removing an index from the list will not remove it from the collection**.
 
 Note:
 - A key benefit of this approach is that you can be 100% sure that whatever is in bootstrap will be aligned between a development, staging and production environment.
@@ -221,7 +217,7 @@ For example, to test whether or not a collection called 'sales_2023' exists we c
 ```typescript
 import MyMongo from './Mongo';
 
-const exists = await MyMongo.hasCollection('sales_2023'); 
+const exists = await MyMongo.hasCollection('sales_2023');
 console.info(exists ? 'exists' : 'does not exist');
 ```
 
@@ -257,7 +253,7 @@ Let's say we want to do some cleanup on our database and no longer need the old 
 ```typescript
 import MyMongo from './Mongo';
 
-await MyMongo.dropCollection('sales_2008'); 
+await MyMongo.dropCollection('sales_2008');
 ```
 
 Note:
@@ -265,7 +261,7 @@ Note:
 - **⚠️ Careful: This operation removes a collection and is irreversible**
 
 
-### hasIndex (collection:string, name:string):Promise<boolean> 
+### hasIndex (collection:string, name:string):Promise<boolean>
 Verify whether or not an index exists for a particular collection on the database. Returns true if the index exists and false if it
 doesn't.
 
@@ -273,7 +269,7 @@ For example, to test whether or not an index called 'date\_asc' exists on a coll
 ```typescript
 import MyMongo from './Mongo';
 
-const exists = await MyMongo.hasIndex('sales_2023', 'date_asc'); 
+const exists = await MyMongo.hasIndex('sales_2023', 'date_asc');
 console.info(exists ? 'exists' : 'does not exist');
 ```
 
@@ -336,7 +332,7 @@ Let's say we want to do some cleanup on our database and no longer need the 'dat
 ```typescript
 import MyMongo from './Mongo';
 
-await MyMongo.dropIndex('sales_2008', 'date_desc'); 
+await MyMongo.dropIndex('sales_2008', 'date_desc');
 ```
 
 Note:
@@ -449,7 +445,7 @@ class User {
     ...
     static async one (uid:string):Promise<User|false> {
         if (typeof uid !== 'string' || !uid.length) return false;
-        
+
         const users = await qUser.aggregate<User>([
             {$match: {uid: {$eq: uid}}},
             {$limit: 1},
@@ -593,7 +589,7 @@ await MyMongo.query('users').updateMany(
 
 
 ### insertMany (documents:Document[]):Promise<BulkWriteResult>
-Insert one or multiple documents into a specific collection, this method requires you to pass an array of documents. Take note that this method will automatically dedupe the provided array. 
+Insert one or multiple documents into a specific collection, this method requires you to pass an array of documents. Take note that this method will automatically dedupe the provided array.
 
 Example usage where we are inserting two new users into a user collection:
 ```typescript
@@ -608,7 +604,7 @@ await MyMongo.query('users').insertMany([
 
 
 ### bulkOps (fn:BulkOperatorFunction, sorted:boolean = false):Promise<BulkWriteResult>
-Run bulk operations against a collection, this method requires you to pass a function which gets called with a bulk operator, by default this applies an unordered bulk operation, pass true as the second parameter to do an ordered bulk operation. 
+Run bulk operations against a collection, this method requires you to pass a function which gets called with a bulk operator, by default this applies an unordered bulk operation, pass true as the second parameter to do an ordered bulk operation.
 
 For more info on the difference between unordered and ordered bulk operations check out [this article](https://www.mongodb.com/docs/manual/reference/method/js-bulk/).
 

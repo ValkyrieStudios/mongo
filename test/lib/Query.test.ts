@@ -1,5 +1,3 @@
-'use strict';
-
 /* eslint-disable max-lines */
 
 import Validator                                from '@valkyriestudios/validator';

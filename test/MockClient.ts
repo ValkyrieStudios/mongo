@@ -1,7 +1,3 @@
-'use strict';
-
-/* eslint-disable class-methods-use-this */
-
 import {DbOptions, MongoClient, MongoClientOptions} from 'mongodb';
 import MockDb from './MockDb';
 
@@ -11,7 +7,7 @@ const orig_connect = MongoClient.connect;
 let con_mode:MockMode = 'success';
 let db_mode:MockMode = 'success';
 let close_mode:MockMode = 'success';
-let calls:any[] = [];
+let calls:unknown[] = [];
 
 export default class MockClient extends MongoClient {
 
@@ -19,23 +15,22 @@ export default class MockClient extends MongoClient {
 
     opts:MongoClientOptions;
 
-    /* @ts-ignore */
     constructor (uri:string, opts:MongoClientOptions) {
         super(uri, opts);
 
-        /* @ts-ignore*/
         this.uri = uri;
 
-        /* @ts-ignore */
         this.opts = opts;
     }
 
+    /* eslint-disable-next-line */
     /* @ts-ignore */
     db (name:string, opts:DbOptions):MockDb {
         calls.push({key: 'db', params: {name, opts}});
 
         if (db_mode === 'throw') throw new Error('MockClient@db: Oh No!');
 
+        /* eslint-disable-next-line */
         /* @ts-ignore */
         if (db_mode === 'wrongret') return false;
 
@@ -44,7 +39,7 @@ export default class MockClient extends MongoClient {
 
     async close ():Promise<void> {
         calls.push({key: 'close', params: {}});
-        
+
         if (close_mode === 'throw') throw new Error('MockClient@close: Oh No!');
     }
 
@@ -52,7 +47,8 @@ export default class MockClient extends MongoClient {
         calls.push({key: 'connect', params: {uri, opts}});
 
         if (con_mode === 'throw') throw new Error('MockClient@connect: Oh No!');
-        
+
+        /* eslint-disable-next-line */
         /* @ts-ignore */
         if (con_mode === 'wrongret') return false;
 
@@ -71,13 +67,14 @@ export default class MockClient extends MongoClient {
         close_mode = mode;
     }
 
-    static get calls ():any[] {
+    static get calls ():unknown[] {
         return calls;
     }
 
     static mock () {
         MockClient.reset();
 
+        /* eslint-disable-next-line */
         /* @ts-ignore */
         MongoClient.connect = MockClient.connect;
     }

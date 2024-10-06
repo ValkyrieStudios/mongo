@@ -1,5 +1,3 @@
-'use strict';
-
 import {
     AggregateOptions,
     BulkWriteOptions,
@@ -19,9 +17,7 @@ type MockMode = 'throw' | 'wrongret' | 'emptyret' | 'unack' | 'success';
 
 export default class MockCollection extends Collection {
 
-    #col:string;
-
-    #calls:any[] = [];
+    #calls:unknown[] = [];
 
     #col_aggregate:MockMode = 'success';
 
@@ -38,12 +34,12 @@ export default class MockCollection extends Collection {
     #col_ordered_bop:MockMode = 'success';
 
     constructor (col:string) {
+        /* eslint-disable-next-line */
         /* @ts-ignore */
         super({databaseName: 'main', client: {}}, col, {});
-
-        this.#col = col;
     }
 
+    /* eslint-disable-next-line */
     /* @ts-ignore */
     aggregate (pipeline:Document[], options:AggregateOptions) {
         this.#calls.push({key: 'aggregate', params: {pipeline, options}});
@@ -58,9 +54,9 @@ export default class MockCollection extends Collection {
     async deleteOne (query:Filter<Document>, options:DeleteOptions):Promise<DeleteResult> {
         this.#calls.push({key: 'deleteOne', params: {query, options}});
 
-        /* @ts-ignore */
         if (this.#col_delete_one === 'throw') throw new Error('MockCollection@deleteOne: Oh No!');
 
+        /* eslint-disable-next-line */
         /* @ts-ignore */
         if (this.#col_delete_one === 'wrongret') return 'hello';
 
@@ -72,9 +68,9 @@ export default class MockCollection extends Collection {
     async deleteMany (query:Filter<Document>, options:DeleteOptions):Promise<DeleteResult> {
         this.#calls.push({key: 'deleteMany', params: {query, options}});
 
-        /* @ts-ignore */
         if (this.#col_delete_many === 'throw') throw new Error('MockCollection@deleteMany: Oh No!');
 
+        /* eslint-disable-next-line */
         /* @ts-ignore */
         if (this.#col_delete_many === 'wrongret') return 'hello';
 
@@ -86,55 +82,53 @@ export default class MockCollection extends Collection {
     async updateOne (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions):Promise<UpdateResult> {
         this.#calls.push({key: 'updateOne', params: {query, data, options}});
 
-        /* @ts-ignore */
         if (this.#col_update_one === 'throw') throw new Error('MockCollection@updateOne: Oh No!');
 
+        /* eslint-disable-next-line */
         /* @ts-ignore */
         if (this.#col_update_one === 'wrongret') return 'hello';
 
-        /* @ts-ignore */
-        if (this.#col_update_one === 'unack') return {acknowledged: false, matchedCount: 1, modifiedCount: 0, upsertedCount: 0};
+        if (this.#col_update_one === 'unack') return {acknowledged: false, matchedCount: 1, modifiedCount: 0, upsertedCount: 0} as UpdateResult;
 
-        /* @ts-ignore */
-        return {acknowledged: true, matchedCount: 1, modifiedCount: 1, upsertedCount: 0};
+        return {acknowledged: true, matchedCount: 1, modifiedCount: 1, upsertedCount: 0} as UpdateResult;
     }
 
     async updateMany (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions):Promise<UpdateResult> {
         this.#calls.push({key: 'updateMany', params: {query, data, options}});
 
-        /* @ts-ignore */
         if (this.#col_update_many === 'throw') throw new Error('MockCollection@updateMany: Oh No!');
 
+        /* eslint-disable-next-line */
         /* @ts-ignore */
         if (this.#col_update_many === 'wrongret') return 'hello';
 
-        /* @ts-ignore */
-        if (this.#col_update_many === 'unack') return {acknowledged: false, matchedCount: 10, modifiedCount: 0, upsertedCount: 0};
+        if (this.#col_update_many === 'unack') return {acknowledged: false, matchedCount: 10, modifiedCount: 0, upsertedCount: 0} as UpdateResult;
 
-        /* @ts-ignore */
-        return {acknowledged: true, matchedCount: 10, modifiedCount: 10, upsertedCount: 0};
+        return {acknowledged: true, matchedCount: 10, modifiedCount: 10, upsertedCount: 0} as UpdateResult;
     }
 
+    /* eslint-disable-next-line */
     /* @ts-ignore */
     initializeUnorderedBulkOp (options:BulkWriteOptions|undefined): MockUnorderedBulkOp {
         this.#calls.push({key: 'initializeUnorderedBulkOp', params: {options}});
 
-        /* @ts-ignore */
         if (this.#col_unordered_bop === 'throw') throw new Error('MockCollection@initializeUnorderedBulkOp: Oh No!');
 
+        /* eslint-disable-next-line */
         /* @ts-ignore */
         if (this.#col_unordered_bop === 'wrongret') return false;
 
         return new MockUnorderedBulkOp(options);
     }
 
+    /* eslint-disable-next-line */
     /* @ts-ignore */
     initializeOrderedBulkOp (options:BulkWriteOptions|undefined): MockOrderedBulkOp {
         this.#calls.push({key: 'initializeOrderedBulkOp', params: {options}});
 
-        /* @ts-ignore */
         if (this.#col_ordered_bop === 'throw') throw new Error('MockCollection@initializeOrderedBulkOp: Oh No!');
 
+        /* eslint-disable-next-line */
         /* @ts-ignore */
         if (this.#col_ordered_bop === 'wrongret') return false;
 
@@ -143,7 +137,7 @@ export default class MockCollection extends Collection {
 
     /* MOCK UTILITIES */
 
-    get calls ():any[] {
+    get calls ():unknown[] {
         return this.#calls;
     }
 

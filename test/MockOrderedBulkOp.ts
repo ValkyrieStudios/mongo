@@ -1,13 +1,9 @@
-'use strict';
-
-/* eslint-disable class-methods-use-this */
-
 type MockMode = 'throw' | 'wrongret' | 'emptyret' | 'unack' | 'success';
 
 let mode_exec:MockMode = 'success';
-let mode_exec_return:any = {acknowledged: true, insertedCount: 50};
+let mode_exec_return:Record<string, unknown> = {acknowledged: true, insertedCount: 50};
 
-let calls:any[] = [];
+let calls:unknown[] = [];
 
 export default class MockOrderedBulkOp {
 
@@ -20,7 +16,7 @@ export default class MockOrderedBulkOp {
         return this;
     }
 
-    async execute (opts = {}): Promise<any> {
+    async execute (opts = {}): Promise<unknown> {
         calls.push({key: 'execute', params: {opts}});
 
         if (mode_exec === 'throw') throw new Error('MockOrderedBulkOp@execute: Oh No!');
@@ -30,11 +26,11 @@ export default class MockOrderedBulkOp {
         return mode_exec_return;
     }
 
-    static get calls ():any[] {
+    static get calls ():unknown[] {
         return calls;
     }
 
-    static setModeExec (mode:MockMode = 'success', retval:any = {acknowledged: true, insertedCount: 50}) {
+    static setModeExec (mode:MockMode = 'success', retval:Record<string, unknown> = {acknowledged: true, insertedCount: 50}) {
         mode_exec = mode;
         mode_exec_return = retval;
     }

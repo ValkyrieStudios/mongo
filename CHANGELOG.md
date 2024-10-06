@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- **deps**: typescript-eslint 8.8.0 (dev deps for eslint 9.x)
+
+### Improved
+- **misc**: Migrate to eslint 9.x
+- **deps**: Upgrade @valkyriestudios/utils to 12.25.1
+- **deps**: Upgrade @valkyriestudios/validator to 9.27.0
+- **deps**: Upgrade mongodb to 6.9.0
+- **deps**: Upgrade @types/node to 20.16.10
+- **deps**: Upgrade eslint to 9.12.0
+- **deps**: Upgrade nyc to 17.1.0
+- **deps**: Upgrade typescript to 5.6.2
+- **deps**: Upgrade typescript-eslint to 8.8.0
+
+### Removed
+- **deps**: @typescript-eslint/eslint-plugin
+- **deps**: @typescript-eslint/parser
+
 ## [1.18.0] - 2024-09-07
 ### Improved
 - **deps**: Upgrade @valkyriestudios/utils to 12.22.0

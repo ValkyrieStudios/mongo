@@ -1,5 +1,3 @@
-'use strict';
-
 import {isBoolean} from '@valkyriestudios/utils/boolean/is';
 import {isAsync, isFunction} from '@valkyriestudios/utils/function';
 import {isNotEmptyString} from '@valkyriestudios/utils/string/isNotEmpty';

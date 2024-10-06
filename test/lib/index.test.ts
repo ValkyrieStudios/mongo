@@ -29,6 +29,8 @@ const FULL_VALID_OPTS:MongoOptions = {
     read_preference: 'nearest',
     retry_reads: true,
     retry_writes: true,
+    connect_timeout_ms: 10000,
+    socket_timeout_ms: 0,
 };
 
 const FULL_VALID_CONNECT_EXPECTED_PAYLOAD = {
@@ -45,6 +47,35 @@ const FULL_VALID_CONNECT_EXPECTED_PAYLOAD = {
         zlibCompressionLevel: 3,
     },
     uri: 'mongodb://root:rootroot@127.0.0.1:27017/admin',
+};
+
+const URI_WITHOUT_DB = 'mongodb://root:rootroot@127.0.0.1:27017/?retryWrites=false';
+
+const FULL_VALID_URI_OPTS:MongoOptions = {
+    debug: true,
+    pool_size: 5,
+    uri: 'mongodb://root:rootroot@127.0.0.1:27017/main?retryWrites=false',
+    db: 'main',
+    read_preference: 'nearest',
+    retry_reads: false,
+    connect_timeout_ms: 8000,
+    socket_timeout_ms: 0,
+};
+
+const FULL_VALID_URI_CONNECT_EXPECTED_PAYLOAD = {
+    opts: {
+        compressors: ['zlib'],
+        connectTimeoutMS: 8000,
+        maxConnecting: 5,
+        maxPoolSize: 5,
+        minPoolSize: 1,
+        readPreference: 'nearest',
+        retryReads: false,
+        retryWrites: false,
+        socketTimeoutMS: 0,
+        zlibCompressionLevel: 3,
+    },
+    uri: 'mongodb://root:rootroot@127.0.0.1:27017/main?retryWrites=false',
 };
 
 describe('Index', () => {
@@ -89,361 +120,748 @@ describe('Index', () => {
             assert.deepEqual(MockClient.calls, []);
         });
 
-        describe('option: debug', () => {
-            it('Should throw when passed as a non-boolean', () => {
-                for (const el of CONSTANTS.NOT_BOOLEAN) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{debug: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
+        describe('hostConnection', () => {
+            describe('option: debug', () => {
+                it('Should throw when passed as a non-boolean', () => {
+                    for (const el of CONSTANTS.NOT_BOOLEAN) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{debug: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
 
-            it('Should not throw when not passed and not log by default', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.debug;
-                assert.doesNotThrow(() => new DBMongo(opts));
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
+                it('Should not throw when not passed and not log by default', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.debug;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
 
-            it('Should not log if debug is passed as false', () => {
-                assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, ...{debug: false}}));
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
+                it('Should not log if debug is passed as false', () => {
+                    assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, ...{debug: false}}));
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
 
-            it('Should log if debug is enabled', () => {
-                assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, ...{debug: true}}));
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                assert.deepEqual(MockClient.calls, []);
-            });
-        });
-
-        describe('option: pool_size', () => {
-            it('Should throw when passed as a non-integer', () => {
-                for (const el of CONSTANTS.NOT_INTEGER) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{pool_size: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-
-            it('Should throw when passed as a number above 100', () => {
-                for (const el of [101, 1000, 99999]) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{pool_size: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-
-            it('Should throw when passed as a number below 1', () => {
-                for (const el of [0, -1, -101, -1000, -99999]) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{pool_size: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-
-            it('Should not throw when not passed', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.pool_size;
-                assert.doesNotThrow(() => new DBMongo(opts));
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                assert.deepEqual(MockClient.calls, []);
-            });
-        });
-
-        describe('option: host', () => {
-            it('Should throw when passed as a non-string or empty string', () => {
-                for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{host: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-
-            it('Should not throw when not passed', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.host;
-                assert.doesNotThrow(() => new DBMongo(opts));
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                assert.deepEqual(MockClient.calls, []);
-            });
-        });
-
-        describe('option: user', () => {
-            it('Should throw when passed as a non-string or empty string', () => {
-                for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{user: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-
-            it('Should throw when not passed', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.user;
-                assert.throws(
-                    () => new DBMongo(opts),
-                    new Error('Mongo@ctor: options are invalid')
-                );
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-        });
-
-        describe('option: pass', () => {
-            it('Should throw when passed as a non-string or empty string', () => {
-                for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{pass: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-
-            it('Should throw when not passed', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.pass;
-                assert.throws(
-                    () => new DBMongo(opts),
-                    new Error('Mongo@ctor: options are invalid')
-                );
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-        });
-
-        describe('option: db', () => {
-            it('Should throw when passed as a non-string or empty string', () => {
-                for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{db: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-
-            it('Should throw when not passed', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.db;
-                assert.throws(
-                    () => new DBMongo(opts),
-                    new Error('Mongo@ctor: options are invalid')
-                );
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-        });
-
-        describe('option: auth_db', () => {
-            it('Should throw when passed as a non-string or empty string', () => {
-                for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{auth_db: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-
-            it('Should not throw when not passed', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.auth_db;
-                assert.doesNotThrow(() => new DBMongo(opts));
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                assert.deepEqual(MockClient.calls, []);
-            });
-        });
-
-        describe('option: replset', () => {
-            it('Should throw when passed as a non-string, non-false or empty string', () => {
-                for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                    if (el === false) continue;
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{replset: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-
-                assert.throws(
-                    /* @ts-ignore */
-                    () => new DBMongo({...FULL_VALID_OPTS, ...{replset: true}}),
-                    new Error('Mongo@ctor: options are invalid')
-                );
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-
-            it('Should not throw when not passed', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.replset;
-                assert.doesNotThrow(() => new DBMongo(opts));
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                assert.deepEqual(MockClient.calls, []);
-            });
-        });
-
-        describe('option: protocol', () => {
-            it('Should throw when passed as a non-string or empty string', () => {
-                for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{protocol: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-
-            it('Should throw when passed as a random string that is not in the set of options', () => {
-                for (const el of ['foo', 'bar', 'hello world']) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{protocol: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
-
-            it('Should not throw when passed as a valid ReadPreference', () => {
-                for (const el of Object.values(Protocols)) {
-                    assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, protocol: el}));
+                it('Should log if debug is enabled', () => {
+                    assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, ...{debug: true}}));
                     assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
                     assert.deepEqual(MockClient.calls, []);
-                    mockConsoleInfo.reset();
-                }
+                });
             });
 
-            it('Should not throw when not passed', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.protocol;
-                assert.doesNotThrow(() => new DBMongo(opts));
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                assert.deepEqual(MockClient.calls, []);
-            });
-        });
+            describe('option: pool_size', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{pool_size: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
 
-        describe('option: read_preference', () => {
-            it('Should throw when passed as a non-string or empty string', () => {
-                for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{read_preference: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
+                it('Should throw when passed as a number above 100', () => {
+                    for (const el of [101, 1000, 99999]) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{pool_size: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
 
-            it('Should throw when passed as a random string that is not in the set of options', () => {
-                for (const el of ['foo', 'bar', 'hello world']) {
-                    assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{read_preference: el}}),
-                        new Error('Mongo@ctor: options are invalid')
-                    );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
+                it('Should throw when passed as a number below 1', () => {
+                    for (const el of [0, -1, -101, -1000, -99999]) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{pool_size: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
 
-            it('Should not throw when passed as a valid ReadPreference', () => {
-                for (const el of Object.values(ReadPreferences)) {
-                    assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, read_preference: el}));
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.pool_size;
+                    assert.doesNotThrow(() => new DBMongo(opts));
                     assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
                     assert.deepEqual(MockClient.calls, []);
-                    mockConsoleInfo.reset();
-                }
+                });
             });
 
-            it('Should not throw when not passed', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.read_preference;
-                assert.doesNotThrow(() => new DBMongo(opts));
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                assert.deepEqual(MockClient.calls, []);
+            describe('option: host', () => {
+                it('Should throw when passed as a non-string or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{host: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.host;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: user', () => {
+                it('Should throw when passed as a non-string or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{user: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.user;
+                    assert.throws(
+                        () => new DBMongo(opts),
+                        new Error('Mongo@ctor: options are invalid')
+                    );
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: pass', () => {
+                it('Should throw when passed as a non-string or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{pass: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.pass;
+                    assert.throws(
+                        () => new DBMongo(opts),
+                        new Error('Mongo@ctor: options are invalid')
+                    );
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: db', () => {
+                it('Should throw when passed as a non-string or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{db: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.db;
+                    assert.throws(
+                        () => new DBMongo(opts),
+                        new Error('Mongo@ctor: options are invalid')
+                    );
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: auth_db', () => {
+                it('Should throw when passed as a non-string or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{auth_db: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.auth_db;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: replset', () => {
+                it('Should throw when passed as a non-string, non-false or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        if (el === false) continue;
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{replset: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+
+                    assert.throws(
+                        /* @ts-ignore */
+                        () => new DBMongo({...FULL_VALID_OPTS, ...{replset: true}}),
+                        new Error('Mongo@ctor: options are invalid')
+                    );
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.replset;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: protocol', () => {
+                it('Should throw when passed as a non-string or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{protocol: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should throw when passed as a random string that is not in the set of options', () => {
+                    for (const el of ['foo', 'bar', 'hello world']) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{protocol: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when passed as a valid ReadPreference', () => {
+                    for (const el of Object.values(Protocols)) {
+                        assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, protocol: el}));
+                        assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                        assert.deepEqual(MockClient.calls, []);
+                        mockConsoleInfo.reset();
+                    }
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.protocol;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: read_preference', () => {
+                it('Should throw when passed as a non-string or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{read_preference: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should throw when passed as a random string that is not in the set of options', () => {
+                    for (const el of ['foo', 'bar', 'hello world']) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{read_preference: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when passed as a valid ReadPreference', () => {
+                    for (const el of Object.values(ReadPreferences)) {
+                        assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, read_preference: el}));
+                        assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                        assert.deepEqual(MockClient.calls, []);
+                        mockConsoleInfo.reset();
+                    }
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.read_preference;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: retry_reads', () => {
+                it('Should throw when passed as a non-boolean', () => {
+                    for (const el of CONSTANTS.NOT_BOOLEAN) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{retry_reads: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.retry_reads;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: retry_writes', () => {
+                it('Should throw when passed as a non-boolean', () => {
+                    for (const el of CONSTANTS.NOT_BOOLEAN) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{retry_writes: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.retry_writes;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: connect_timeout_ms', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{connect_timeout_ms: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.retry_writes;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: socket_timeout_ms', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{socket_timeout_ms: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.retry_writes;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
             });
         });
 
-        describe('option: retry_reads', () => {
-            it('Should throw when passed as a non-boolean', () => {
-                for (const el of CONSTANTS.NOT_BOOLEAN) {
+        describe('uriConnection', () => {
+            describe('option: debug', () => {
+                it('Should throw when passed as a non-boolean', () => {
+                    for (const el of CONSTANTS.NOT_BOOLEAN) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{debug: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed and not log by default', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS};
+                    delete opts.debug;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not log if debug is passed as false', () => {
+                    assert.doesNotThrow(() => new DBMongo({...FULL_VALID_URI_OPTS, ...{debug: false}}));
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should log if debug is enabled', () => {
+                    assert.doesNotThrow(() => new DBMongo({...FULL_VALID_URI_OPTS, ...{debug: true}}));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: pool_size', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{pool_size: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should throw when passed as a number above 100', () => {
+                    for (const el of [101, 1000, 99999]) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{pool_size: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should throw when passed as a number below 1', () => {
+                    for (const el of [0, -1, -101, -1000, -99999]) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{pool_size: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS};
+                    delete opts.pool_size;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: uri', () => {
+                it('Should throw when passed as a non-string or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        if (el === undefined) continue;
+                        assert.throws(
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, uri: el})
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should throw when passed as an invalid uri', () => {
                     assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{retry_reads: el}}),
-                        new Error('Mongo@ctor: options are invalid')
+                        () => new DBMongo({...FULL_VALID_URI_OPTS, uri: 'https://myhappymongo.com'})
                     );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
-            });
 
-            it('Should not throw when not passed', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.retry_reads;
-                assert.doesNotThrow(() => new DBMongo(opts));
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                assert.deepEqual(MockClient.calls, []);
-            });
-        });
-
-        describe('option: retry_writes', () => {
-            it('Should throw when passed as a non-boolean', () => {
-                for (const el of CONSTANTS.NOT_BOOLEAN) {
                     assert.throws(
-                        /* @ts-ignore */
-                        () => new DBMongo({...FULL_VALID_OPTS, ...{retry_writes: el}}),
-                        new Error('Mongo@ctor: options are invalid')
+                        () => new DBMongo({...FULL_VALID_URI_OPTS, uri: 'peter+rootroot@myhappymongo.com'})
                     );
-                }
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
+
+                    assert.throws(
+                        () => new DBMongo({...FULL_VALID_URI_OPTS, uri: 'peter+rootroot@myhappymongo.com/myDb'})
+                    );
+                });
+
+                it('Should not throw when passed as a string with retryReads inside of it', () => {
+                    assert.doesNotThrow(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb+srv://peter:rootroot@myhappymongo.com/myDb?retryReads=true',
+                    }));
+                    assert.doesNotThrow(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb://peter:rootroot@myhappymongo.com/myDb?retryReads=false',
+                    }));
+                });
+
+                it('Should not throw when passed as a string with retryWrites inside of it', () => {
+                    assert.doesNotThrow(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb+srv://peter:rootroot@myhappymongo.com/myDb?retryWrites=true',
+                    }));
+                    assert.doesNotThrow(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb://peter:rootroot@myhappymongo.com/myDb?retryWrites=false',
+                    }));
+                });
+
+                it('Should not throw when passed as a string with socketTimeoutMS inside of it', () => {
+                    assert.doesNotThrow(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb+srv://peter:rootroot@myhappymongo.com/myDb?socketTimeoutMS=9000',
+                    }));
+                    assert.doesNotThrow(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb://peter:rootroot@myhappymongo.com/myDb?socketTimeoutMS=9000',
+                    }));
+                });
+
+                it('Should not throw when passed as a string with connectTimeoutMS inside of it', () => {
+                    assert.doesNotThrow(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb+srv://peter:rootroot@myhappymongo.com/myDb?connectTimeoutMS=9000',
+                    }));
+                    assert.doesNotThrow(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb://peter:rootroot@myhappymongo.com/myDb?connectTimeoutMS=9000',
+                    }));
+                });
+
+                it('Should not throw when passed as a string with readPreference inside of it', () => {
+                    assert.doesNotThrow(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb+srv://peter:rootroot@myhappymongo.com/myDb?readPreference=nearest',
+                    }));
+                    assert.doesNotThrow(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb://peter:rootroot@myhappymongo.com/myDb?readPreference=nearest',
+                    }));
+                });
             });
 
-            it('Should not throw when not passed', () => {
-                const opts:any = {...FULL_VALID_OPTS};
-                delete opts.retry_writes;
-                assert.doesNotThrow(() => new DBMongo(opts));
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                assert.deepEqual(MockClient.calls, []);
+            describe('option: db', () => {
+                it('Should throw when passed as a non-string or empty string when uri does not contain db', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        if (el === undefined) continue;
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, uri: URI_WITHOUT_DB, ...{db: el}})
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should throw when not passed when uri does not contain db', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS, uri: URI_WITHOUT_DB};
+                    delete opts.db;
+                    assert.throws(
+                        () => new DBMongo(opts),
+                        new Error('Mongo@ctor: db not in uri and not provided in config')
+                    );
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed when uri does contain db', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS};
+                    delete opts.db;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when passed when uri does not contain db', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS, uri: URI_WITHOUT_DB, db: 'hello'};
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+                it('Should not throw when passed when uri does contain db', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS, db: 'hello'};
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: read_preference', () => {
+                it('Should throw when passed as a non-string or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{read_preference: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should throw when passed as a random string that is not in the set of options', () => {
+                    for (const el of ['foo', 'bar', 'hello world']) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{read_preference: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when passed as a valid ReadPreference', () => {
+                    for (const el of Object.values(ReadPreferences)) {
+                        assert.doesNotThrow(() => new DBMongo({...FULL_VALID_URI_OPTS, read_preference: el}));
+                        assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                        assert.deepEqual(MockClient.calls, []);
+                        mockConsoleInfo.reset();
+                    }
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS};
+                    delete opts.read_preference;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: retry_reads', () => {
+                it('Should throw when passed as a non-boolean', () => {
+                    for (const el of CONSTANTS.NOT_BOOLEAN) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{retry_reads: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS};
+                    delete opts.retry_reads;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: retry_writes', () => {
+                it('Should throw when passed as a non-boolean', () => {
+                    for (const el of CONSTANTS.NOT_BOOLEAN) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{retry_writes: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS};
+                    delete opts.retry_writes;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: connect_timeout_ms', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{connect_timeout_ms: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS};
+                    delete opts.retry_writes;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+            });
+
+            describe('option: socket_timeout_ms', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        assert.throws(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{socket_timeout_ms: el}}),
+                            new Error('Mongo@ctor: options are invalid')
+                        );
+                    }
+                    assert.deepEqual(mockConsoleInfo.calls, []);
+                    assert.deepEqual(MockClient.calls, []);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS};
+                    delete opts.retry_writes;
+                    assert.doesNotThrow(() => new DBMongo(opts));
+                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                    assert.deepEqual(MockClient.calls, []);
+                });
             });
         });
     });
@@ -845,6 +1263,28 @@ describe('Index', () => {
             assert.deepEqual(MockClient.calls, [
                 {key: 'connect', params: FULL_VALID_CONNECT_EXPECTED_PAYLOAD},
                 {key: 'db', params: {name: 'main', opts: {readPreference: 'nearest', retryWrites: true}}},
+                {key: 'close', params: {}},
+            ]);
+        });
+
+        it('Should succeed when connectivity succeeds with uri options', async () => {
+            const instance = new DBMongo(FULL_VALID_URI_OPTS);
+            MockClient.setConnectMode('success');
+            MockClient.setDbMode('success');
+            MockClient.setCloseMode('success');
+            await instance.bootstrap();
+            assert.deepEqual(mockConsoleInfo.calls, [
+                ['Mongo: Instantiated'],
+                ['Mongo@bootstrap: ------ Connectivity check'],
+                ['Mongo@connect: Establishing connection'],
+                ['Mongo@connect: Connection established'],
+                ['Mongo@close: Closing connection'],
+                ['Mongo@close: Connection terminated'],
+                ['Mongo@bootstrap: ------ Connectivity success'],
+            ]);
+            assert.deepEqual(MockClient.calls, [
+                {key: 'connect', params: FULL_VALID_URI_CONNECT_EXPECTED_PAYLOAD},
+                {key: 'db', params: {name: 'main', opts: {readPreference: 'nearest', retryWrites: false}}},
                 {key: 'close', params: {}},
             ]);
         });

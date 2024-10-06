@@ -57,7 +57,7 @@ export default instance;
 ```
 
 
-###### Options
+###### Options (Host connection)
 The following is the list of options available for configuration as well as their defaults. Most of these options have sensible defaults and as such, only a handful are truly required.
 
 | Option | Meaning | Required | Default |
@@ -74,6 +74,8 @@ The following is the list of options available for configuration as well as thei
 | **read_preference** | MongoDB Read Preference (See: https://www.mongodb.com/docs/manual/core/read-preference) | | `'nearest'` |
 | **retry_reads** | Whether or not to retry reads when they fail | | `true` |
 | **retry_writes** | Whether or not to retry writes when they fail | | `true` |
+| **connect_timeout_ms** | Time in milliseconds to attempt a connection | | `10000` |
+| **socket_timeout_ms** | Time in milliseconds to attempt a send or receive on a socket before the attempt times out | | `0` |
 
 Below is an example of such a configuration object for an atlas cluster hosted at 'dummyatlas.example.mongodb.net' with a user called 'root' and a password of 'rootroot' for a connection pool with size 50.
 
@@ -86,6 +88,40 @@ Below is an example of such a configuration object for an atlas cluster hosted a
     pass: 'rootroot',
     db: 'main',
     protocol: 'mongodb+srv',
+}
+```
+
+###### Options (URI connection)
+The following is the list of options available for configuration as well as their defaults. Most of these options have sensible defaults and as such, only a handful are truly required.
+
+| Option | Meaning | Required | Default |
+|--------|----------|---------|---------|
+| **debug** | Internal debug option for @valkyriestudios/mongo, logging will be done on system console if enabled | | `false` |
+| **pool_size** | The size of the internal connection pool, for safety reasons this will be validated as **an integer between 1 and 100** | | `5` |
+| **uri** | Uri Connection string | yes | `mongodb+srv://peter:rootroot@myfancyHost.com/myDb` |
+| **db** | Database to use for the connection pool (only required IF the connection string does not select DB) | | |
+| **read_preference** | MongoDB Read Preference (See: https://www.mongodb.com/docs/manual/core/read-preference) | | `'nearest'` |
+| **retry_reads** | Whether or not to retry reads when they fail | | `true` |
+| **retry_writes** | Whether or not to retry writes when they fail | | `true` |
+| **connect_timeout_ms** | Time in milliseconds to attempt a connection | | `10000` |
+| **socket_timeout_ms** | Time in milliseconds to attempt a send or receive on a socket before the attempt times out | | `0` |
+
+Below is an example of such a configuration object for an atlas cluster hosted at 'dummyatlas.example.mongodb.net' with a user called 'root' and a password of 'rootroot' for a connection pool with size 50.
+
+**Take note: In real-world scenarios the values here should never be part of a codebase but be provided through the environment**
+```typescript
+{
+    pool_size: 50,
+    uri: 'mongodb+srv://root:rootroot@dummyatlas.example.mongodb.net/main',
+}
+```
+
+**Take note:** The `db` option is not required for uri connections UNLESS it is not part of the connection string, if not part it should be provided separately
+```typescript
+{
+    pool_size: 50,
+    uri: 'mongodb+srv://root:rootroot@dummyatlas.example.mongodb.net',
+    db: 'main',
 }
 ```
 

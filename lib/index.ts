@@ -1,10 +1,10 @@
-import {Validator}  from '@valkyriestudios/validator';
+import {Validator} from '@valkyriestudios/validator';
 import {isNeArray} from '@valkyriestudios/utils/array';
 import {isObject, isNeObject} from '@valkyriestudios/utils/object';
 import {isFunction} from '@valkyriestudios/utils/function/is';
 import {isNotEmptyString} from '@valkyriestudios/utils/string/isNotEmpty';
-import {fnv1A}      from '@valkyriestudios/utils/hash/fnv1A';
-import {Query}      from './Query';
+import {fnv1A} from '@valkyriestudios/utils/hash/fnv1A';
+import {Query} from './Query';
 import {
     MongoClient,
     Db,
@@ -20,7 +20,7 @@ import {
     type ReadPreference,
 } from './Types';
 
-type MongoFullOptions = {
+type MongoHostFullOptions = {
     /* Whether or not we should debug, this is internal to the library and purely focuses on pool events (defaults to false) */
     debug: boolean;
 
@@ -56,10 +56,48 @@ type MongoFullOptions = {
 
     /* Whether or not we should retry writes (defaults to true) */
     retry_writes: boolean;
+
+    /* Time in milliseconds to attempt a connection (defaults to 10000) */
+    connect_timeout_ms: number;
+
+    /* Time in milliseconds to attempt a send or receive on a socket before the attempt times out */
+    socket_timeout_ms: number;
+}
+
+type MongoUriFullOptions = {
+    /* Whether or not we should debug, this is internal to the library and purely focuses on pool events (defaults to false) */
+    debug: boolean;
+
+    /* Size of the connection pool (defaults to 5) */
+    pool_size: number;
+
+    /* URI to connect to */
+    uri: string;
+
+    /* Database to use for connection pool */
+    db: string;
+
+    /* Read Preference for connection pool (defaults to 'nearest') */
+    read_preference: ReadPreference;
+
+    /* Whether or not we should retry reads (defaults to true) */
+    retry_reads: boolean;
+
+    /* Whether or not we should retry writes (defaults to true) */
+    retry_writes: boolean;
+
+    /* Time in milliseconds to attempt a connection (defaults to 10000) */
+    connect_timeout_ms: number;
+
+    /* Time in milliseconds to attempt a send or receive on a socket before the attempt times out */
+    socket_timeout_ms: number;
 }
 
 /* Required mongo options */
-export type MongoOptions = Partial<MongoFullOptions> & Required<Pick<MongoFullOptions, 'user' | 'pass' | 'db'>>;
+type MongoHostOptions = Partial<MongoHostFullOptions> & Required<Pick<MongoHostFullOptions, 'user' | 'pass' | 'db'>>;
+type MongoUriOptions = Partial<MongoUriFullOptions> & Required<Pick<MongoUriFullOptions, 'uri'>>;
+
+export type MongoOptions = MongoHostOptions | MongoUriOptions;
 
 type CollectionIndexStructure = {
     name:string;
@@ -82,6 +120,10 @@ Validator.extendEnum({
     valkyrie_mongo_enum_index_val: [-1, 1],
 });
 
+Validator.extendRegex({
+    valkyrie_mongo_uri: /^(mongodb(?:\+srv)?):\/\/(?:([^:@]+)(?::([^@]+))?@)?([^/:]+(?::\d+)?(?:,[^/:]+(?::\d+)?)*)(?:\/([^/?]+)?)?(?:\?(.*))?$/, /* eslint-disable-line max-len */
+});
+
 Validator.extendSchema<CollectionIndexStructure>('valkyrie_mongo_collection_structure_index', {
     name: 'string_ne|min:1|max:128',
     spec: '{min:1}valkyrie_mongo_enum_index_val',
@@ -93,20 +135,44 @@ const vCollectionStructure = new Validator<CollectionStructure>({
     idx     : '?[unique]valkyrie_mongo_collection_structure_index',
 });
 
-const vOptions = new Validator<MongoFullOptions>({
-    debug           : 'boolean',
-    pool_size       : 'integer|min:1|max:100',
-    host            : 'string_ne|min:1|max:1024',
-    user            : 'string_ne|min:1|max:256',
-    pass            : 'string_ne|min:1|max:256',
-    db              : 'string_ne|min:1|max:128',
-    auth_db         : 'string_ne|min:1|max:128',
-    replset         : '(string_ne|min:1|max:128)(false)',
-    protocol        : 'valkyrie_mongo_enum_protocols',
-    read_preference : 'valkyrie_mongo_enum_read_pref',
-    retry_reads     : 'boolean',
-    retry_writes    : 'boolean',
+const vOptions = new Validator<MongoHostFullOptions>({
+    debug               : 'boolean',
+    pool_size           : 'integer|min:1|max:100',
+    host                : 'string_ne|min:1|max:1024',
+    user                : 'string_ne|min:1|max:256',
+    pass                : 'string_ne|min:1|max:256',
+    db                  : 'string_ne|min:1|max:128',
+    auth_db             : 'string_ne|min:1|max:128',
+    replset             : '(string_ne|min:1|max:128)(false)',
+    protocol            : 'valkyrie_mongo_enum_protocols',
+    read_preference     : 'valkyrie_mongo_enum_read_pref',
+    retry_reads         : 'boolean',
+    retry_writes        : 'boolean',
+    connect_timeout_ms  : 'integer|min:1000',
+    socket_timeout_ms   : 'integer|min:0',
 });
+
+const vUriOptions = new Validator<MongoUriFullOptions>({
+    debug               : 'boolean',
+    uri                 : 'valkyrie_mongo_uri',
+    pool_size           : 'integer|min:1|max:100',
+    db                  : 'string_ne|min:1|max:128',
+    read_preference     : 'valkyrie_mongo_enum_read_pref',
+    retry_reads         : 'boolean',
+    retry_writes        : 'boolean',
+    connect_timeout_ms  : 'integer|min:1000',
+    socket_timeout_ms   : 'integer|min:0',
+});
+
+const DEFAULTS = {
+    debug: false,
+    pool_size: 5,
+    read_preference: ReadPreferences.NEAREST,
+    retry_reads: true,
+    retry_writes: true,
+    connect_timeout_ms: 10000,
+    socket_timeout_ms: 0,
+};
 
 /**
  * Validates structure passed to check
@@ -129,10 +195,88 @@ function validateStructure (structure:CollectionStructure[], msg:string) {
     }
 }
 
+/**
+ * Creates a config from a connection config based on uri
+ *
+ * @param {MongoUriOptions} opts - Connection config
+ */
+function getConfigFromUriOptions (opts:MongoUriOptions):{config:MongoUriFullOptions;uri:string} {
+    let config:Record<string, unknown> = {...DEFAULTS};
+
+    /* Specific url search params */
+    try {
+        if (!isNotEmptyString(opts.uri)) throw new Error('');
+
+        const url = new URL(opts.uri);
+
+        if (url.searchParams.has('retryWrites')) {
+            config.retry_writes = url.searchParams.get('retryWrites') === 'true';
+        }
+
+        if (url.searchParams.has('retryReads')) {
+            config.retry_reads = url.searchParams.get('retryReads') === 'true';
+        }
+
+        if (url.searchParams.has('readPreference')) {
+            config.read_preference = url.searchParams.get('readPreference') as ReadPreference;
+        }
+
+        if (url.searchParams.has('connectTimeoutMS')) {
+            config.connect_timeout_ms = parseInt(url.searchParams.get('connectTimeoutMS') as string);
+        }
+
+        if (url.searchParams.has('socketTimeoutMS')) {
+            config.socket_timeout_ms = parseInt(url.searchParams.get('socketTimeoutMS') as string);
+        }
+
+        if (!config.db) {
+            config.db = url.pathname?.split('/').pop();
+        }
+    } catch {
+        throw new Error('Mongo@ctor: uri should be passed as a valid uri');
+    }
+
+    config = {...config, ...opts};
+
+    /* If we don't have a DB get it from the uri */
+    if (!config.db) throw new Error('Mongo@ctor: db not in uri and not provided in config');
+
+    /* Validate options, throw if invalid */
+    if (!vUriOptions.check(config)) throw new Error('Mongo@ctor: options are invalid');
+
+    return {config: config as MongoUriFullOptions, uri: opts.uri};
+}
+
+/**
+ * Creates a config from a connection config based on host variables
+ *
+ * @param {MongoOptions} opts - Connection config
+ */
+
+function getConfigFromHostOptions (opts:MongoHostOptions):{config:MongoHostFullOptions;uri:string} {
+    const config = {
+        ...DEFAULTS,
+        host            : '127.0.0.1:27017',
+        auth_db         : 'admin',
+        replset         : false,
+        protocol        : Protocols.STANDARD,
+        ...opts,
+    };
+
+    /* Validate options, throw if invalid */
+    if (!vOptions.check(config)) throw new Error('Mongo@ctor: options are invalid');
+
+    /* Create connection uri */
+    let uri = `${config.protocol}://${config.user}:${config.pass}@${config.host}/${config.auth_db}`;
+    if (config.replset) uri += `?replicaSet=${config.replset}`;
+
+    return {config: config as MongoHostFullOptions, uri};
+}
+
 class Mongo {
 
     /* Full configuration */
-    #config:MongoFullOptions;
+    #config:MongoHostFullOptions|MongoUriFullOptions;
 
     /* Extracted connection string (built off of configuration) */
     #uri:string;
@@ -152,33 +296,17 @@ class Mongo {
         console.info(...args); /* eslint-disable-line no-console */
     };
 
-    constructor (opts:MongoOptions) {
+    constructor (connection_opts:MongoOptions) {
         /* Verify that the options passed are in the form of an object */
-        if (!isNeObject(opts)) throw new Error('Mongo@ctor: options should be an object');
+        if (!isNeObject(connection_opts)) throw new Error('Mongo@ctor: options should be an object');
 
-        /* Create options, spread passed options on top of defaults */
-        const config = {
-            debug           : false,
-            pool_size       : 5,
-            host            : '127.0.0.1:27017',
-            auth_db         : 'admin',
-            replset         : false,
-            protocol        : Protocols.STANDARD,
-            read_preference : ReadPreferences.NEAREST,
-            retry_reads     : true,
-            retry_writes    : true,
-            ...opts,
-        };
+        /* If we have a uri we know it's uri options */
+        const {config, uri} = 'uri' in connection_opts
+            ? getConfigFromUriOptions(connection_opts)
+            : getConfigFromHostOptions(connection_opts);
 
-        /* Validate options, throw if invalid */
-        if (!vOptions.check(config)) throw new Error('Mongo@ctor: options are invalid');
-
-        /* Options are valid */
-        this.#config = config as MongoFullOptions;
-
-        /* Create connection uri */
-        this.#uri = `${this.#config.protocol}://${this.#config.user}:${this.#config.pass}@${this.#config.host}/${this.#config.auth_db}`;
-        if (this.#config.replset) this.#uri += `?replicaSet=${this.#config.replset}`;
+        this.#config = config;
+        this.#uri = uri;
 
         /* Create instance uid */
         this.#uid = `mongodb:${fnv1A({uri: this.#uri, db: this.#config.db})}`;
@@ -293,8 +421,8 @@ class Mongo {
                 minPoolSize         : 1,
                 maxPoolSize         : this.#config.pool_size,
                 maxConnecting       : this.#config.pool_size,
-                connectTimeoutMS    : 10000,
-                socketTimeoutMS     : 0,
+                connectTimeoutMS    : this.#config.connect_timeout_ms,
+                socketTimeoutMS     : this.#config.socket_timeout_ms,
                 readPreference      : this.#config.read_preference,
                 retryReads          : this.#config.retry_reads,
                 retryWrites         : this.#config.retry_writes,

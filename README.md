@@ -505,17 +505,19 @@ Counts the number of records passing the provided query (This can be both a stan
 Example Usage:
 ```typescript
 import MyMongo from './Mongo';
+let qUsers = MyMongo.query<{
+    isActive: boolean;
+    type: string;
+}>('users');
 
 /* No filters */
-const totalRecords = await MyMongo.query('users').count();
+const totalRecords = await qUsers.count();
 
 /* With filters */
-const activeUsers = await MyMongo.query('users').count({
-    isActive: {$eq: true},
-});
+const activeUsers = await qUsers.count({isActive: {$eq: true}});
 
 /* With aggregation pipeline: Important to note that a '$count' stage will automatically be injected here */
-const activeUsers = await MyMongo.query('users').count([
+const activeUsers = await qUsers.count([
     {$match: {
         isActive: {$eq: true},
         type: {$exists: true},

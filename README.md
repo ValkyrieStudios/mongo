@@ -499,6 +499,29 @@ find/update/remove method calls by design.
 
 The below sections describe all the methods available on a Query instance.
 
+### count (filter:Filter<Document>|Document[], options?:CountOptions|AggregateOptions):Promise<number>
+Counts the number of records passing the provided query (This can be both a standard filter query or an aggregation pipeline)
+
+Example Usage:
+```typescript
+import MyMongo from './Mongo';
+
+/* No filters */
+const totalRecords = await MyMongo.query('users').count();
+
+/* With filters */
+const activeUsers = await MyMongo.query('users').count({
+    isActive: {$eq: true},
+});
+
+/* With aggregation pipeline: Important to note that a '$count' stage will automatically be injected here */
+const activeUsers = await MyMongo.query('users').count([
+    {$match: {
+        isActive: {$eq: true},
+        type: {$exists: true},
+    }},
+]);
+```
 
 ### aggregate (pipeline:Document[], options:AggregateOptions = {}):Promise<Document[]>
 Runs an aggregation pipeline against the query instance's collection and return its results as an array of Documents, this method requires you to pass an aggregation pipeline with an optional AggregateOptions parameter.

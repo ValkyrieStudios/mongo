@@ -7,6 +7,7 @@ import {Mongo}  from './index';
 import {
     type AggregateOptions,
     type BulkWriteResult,
+    type CountOptions,
     type DeleteOptions,
     type DeleteResult,
     type Document,
@@ -21,7 +22,7 @@ import {
 type BulkOperator = OrderedBulkOperation|UnorderedBulkOperation;
 type BulkOperatorFunction = (operator:BulkOperator) => void;
 
-class Query <TModel extends Document> {
+class Query <TModel extends Document = Document> {
 
     /* Instance of @valkyriestudios/mongo the query is running against */
     #instance:Mongo;
@@ -35,6 +36,58 @@ class Query <TModel extends Document> {
 
         this.#instance  = instance;
         this.#col       = col;
+    }
+
+    /**
+     * Counts the number of records. Pass pipeline to run a count with filters.
+     *
+     * Take Note: This will automatically add a $count stage to the pipeline when running an aggregation pipeline
+     *
+     * @param {Filter<Document>|Document[]?} filter - Optional filter object or aggregation pipeline to run
+     * @param {CountOptions|AggregateOptions?} options - Options to use when running a filter/pipeline
+     */
+    async count (filter?:Filter<TModel>|Document[], options:CountOptions|AggregateOptions = {}):Promise<number> {
+        if (
+            !isNeArray(filter) &&
+            !isObject(filter) &&
+            filter !== undefined
+        ) throw new Error('MongoQuery@count: Invalid filter passed');
+
+        if (
+            options !== undefined &&
+                !isObject(options)
+        ) throw new Error('MongoQuery@count: Options should be an object');
+
+        try {
+            let result:{count:number}[];
+            if (isNeArray(filter)) {
+                result = await this.aggregate([
+                    ...filter,
+                    {$count: 'count'},
+                ], options) as (TModel & {count:number})[];
+            } else {
+                /* Connect */
+                const db = await this.#instance.connect();
+
+                /* Run query */
+                result = [{
+                    count: await db.collection(this.#col).count(isObject(filter) ? filter as Filter<Document> : undefined, options),
+                }];
+            }
+
+            /* Validate result */
+            if (
+                !isNeArray(result) ||
+                !isObject(result[0]) ||
+                !Number.isInteger(result[0].count) ||
+                result[0].count < 0
+            ) throw new Error('Unexpected result');
+
+            return result[0].count;
+        } catch (err) {
+            const msg = err instanceof Error ? err.message.replace('MongoQuery@aggregate: Failed - ', '') : 'Unknown Error';
+            throw new Error(`MongoQuery@count: Failed - ${msg}`);
+        }
     }
 
     /**

@@ -2,6 +2,7 @@ import {
     AggregateOptions,
     BulkWriteOptions,
     Collection,
+    CountOptions,
     DeleteOptions,
     DeleteResult,
     Document,
@@ -20,6 +21,9 @@ export default class MockCollection extends Collection {
     #calls:unknown[] = [];
 
     #col_aggregate:MockMode = 'success';
+    #col_aggregate_return:unknown[] = [{bla: 'bla'}];
+
+    #col_count:MockMode = 'success';
 
     #col_delete_one:MockMode = 'success';
 
@@ -48,7 +52,19 @@ export default class MockCollection extends Collection {
 
         if (this.#col_aggregate === 'wrongret') return {toArray: async () => false};
 
-        return {toArray: async () => [{bla: 'bla'}]};
+        return {toArray: async () => this.#col_aggregate_return};
+    }
+
+    async count (query: Filter<Document>, options:CountOptions):Promise<number> {
+        this.#calls.push({key: 'count', params: {query, options}});
+
+        if (this.#col_count === 'throw') throw new Error('MockCollection@count: Oh No!');
+
+        /* eslint-disable-next-line */
+        /* @ts-ignore */
+        if (this.#col_count === 'wrongret') return 'hello';
+
+        return 20;
     }
 
     async deleteOne (query:Filter<Document>, options:DeleteOptions):Promise<DeleteResult> {
@@ -141,8 +157,13 @@ export default class MockCollection extends Collection {
         return this.#calls;
     }
 
-    setColAggregate (mode:MockMode = 'success') {
+    setColAggregate (mode:MockMode = 'success', result?:unknown[]) {
         this.#col_aggregate = mode;
+        this.#col_aggregate_return = result || [{bla: 'bla'}];
+    }
+
+    setColCount (mode:MockMode = 'success') {
+        this.#col_count = mode;
     }
 
     setColDeleteOne (mode:MockMode = 'success') {
@@ -172,6 +193,7 @@ export default class MockCollection extends Collection {
     reset () {
         this.#calls = [];
         this.setColAggregate();
+        this.setColCount();
         this.setColDeleteOne();
         this.setColDeleteMany();
         this.setColUpdateOne();

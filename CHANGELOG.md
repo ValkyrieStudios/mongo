@@ -6,8 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- **feat**: Query@count - Added count as a utility method to the Query baseclass
+```typescript
+/* No filters */
+const totalRecords = await MyMongo.query('users').count();
+
+/* With filters */
+const activeUsers = await MyMongo.query('users').count({
+    isActive: {$eq: true},
+});
+
+/* With aggregation pipeline: Important to note that a '$count' stage will automatically be injected here */
+const activeUsers = await MyMongo.query('users').count([
+    {$match: {
+        isActive: {$eq: true},
+        type: {$exists: true},
+    }},
+]);
+```
+
 ### Improved
-- **dx**: Query now listens to a generic passed to it and as such can be made type-safe on find/update/remove method calls
+- **dx**: Query now listens to a generic passed to it and as such can be made type-safe on find/update/remove method calls. Important Note: This doet not work yet for projection type-safety in findOne
 ```typescript
 type User = {
     uid: string;

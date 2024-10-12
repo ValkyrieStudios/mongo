@@ -81,21 +81,238 @@ describe('Query', () => {
         });
     });
 
+    describe('count', () => {
+        let instance:Query;
+
+        beforeEach(() => {
+            instance = new Query(mdb_instance, 'mycollection');
+        });
+
+        it('Should not be static', () => {
+            /* @ts-ignore */
+            assert.ok(Query.count === undefined);
+        });
+
+        it('Should be an async function', () => {
+            assert.ok(Validator.rules.async_function(instance.count));
+            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mock_col.calls, []);
+        });
+
+        it('Should throw when passed options that are not an object or undefined', async () => {
+            for (const el of CONSTANTS.NOT_OBJECT) {
+                if (el === undefined) continue;
+                let val = false;
+                try {
+                    await instance.count({}, el);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@count: Options should be an object');
+                assert.deepEqual(MockClient.calls, []);
+                assert.deepEqual(mock_col.calls, []);
+            }
+        });
+
+        it('Should throw when passed a filter that is not undefined an object or a valid pipeline', async () => {
+            for (const el of CONSTANTS.NOT_OBJECT) {
+                if (el === undefined || (Array.isArray(el) && el.length)) continue;
+                let val = false;
+                try {
+                    await instance.count(el);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@count: Invalid filter passed');
+                assert.deepEqual(MockClient.calls, []);
+                assert.deepEqual(mock_col.calls, []);
+            }
+        });
+
+        describe('filter', () => {
+            it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
+                const query = {date: {$gt: new Date()}};
+                MockClient.setDbMode('wrongret');
+                mock_col.setColUnorderedBop('throw');
+                let val = false;
+                try {
+                    await instance.count(query);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@count: Failed - Mongo@connect: Failed to create database instance');
+                assert.deepEqual(MockClient.calls, [
+                    {key: 'connect', params: EXPECTED_CON_PAYLOAD},
+                    {key: 'db', params: EXPECTED_DB_PAYLOAD},
+                ]);
+                assert.deepEqual(mock_col.calls, []);
+            });
+
+            it('Should throw when passed valid payload but internal count throws', async () => {
+                const query = {date: {$gt: new Date()}};
+                mock_col.setColCount('throw');
+                let val = false;
+                try {
+                    await instance.count(query);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@count: Failed - MockCollection@count: Oh No!');
+                assert.deepEqual(MockClient.calls, [
+                    {key: 'connect', params: EXPECTED_CON_PAYLOAD},
+                    {key: 'db', params: EXPECTED_DB_PAYLOAD},
+                ]);
+                assert.deepEqual(mock_col.calls, [{key: 'count', params: {options: {}, query}}]);
+            });
+
+            it('Should throw when passed valid payload but internal count returns a wrong result', async () => {
+                const query = {date: {$gt: new Date()}};
+                mock_col.setColCount('wrongret');
+                let val = false;
+                try {
+                    await instance.count(query);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@count: Failed - Unexpected result');
+                assert.deepEqual(MockClient.calls, [
+                    {key: 'connect', params: EXPECTED_CON_PAYLOAD},
+                    {key: 'db', params: EXPECTED_DB_PAYLOAD},
+                ]);
+                assert.deepEqual(mock_col.calls, [{key: 'count', params: {options: {}, query}}]);
+            });
+
+            it('Should return count when passed valid payload and count succeeds', async () => {
+                const query = {date: {$gt: new Date()}};
+                mock_col.setColCount('success');
+                const out = await instance.count(query);
+                assert.equal(out, 20);
+                assert.deepEqual(MockClient.calls, [
+                    {key: 'connect', params: EXPECTED_CON_PAYLOAD},
+                    {key: 'db', params: EXPECTED_DB_PAYLOAD},
+                ]);
+                assert.deepEqual(mock_col.calls, [{key: 'count', params: {options: {}, query}}]);
+            });
+
+            it('Should allow passing empty query', async () => {
+                mock_col.setColCount('success');
+                const out = await instance.count({});
+                assert.equal(out, 20);
+                assert.deepEqual(MockClient.calls, [
+                    {key: 'connect', params: EXPECTED_CON_PAYLOAD},
+                    {key: 'db', params: EXPECTED_DB_PAYLOAD},
+                ]);
+                assert.deepEqual(mock_col.calls, [{key: 'count', params: {options: {}, query: {}}}]);
+            });
+
+            it('Should allow passing options for query', async () => {
+                mock_col.setColCount('success');
+                const out = await instance.count({}, {allowDiskUse: true});
+                assert.equal(out, 20);
+                assert.deepEqual(MockClient.calls, [
+                    {key: 'connect', params: EXPECTED_CON_PAYLOAD},
+                    {key: 'db', params: EXPECTED_DB_PAYLOAD},
+                ]);
+                assert.deepEqual(mock_col.calls, [{key: 'count', params: {options: {allowDiskUse: true}, query: {}}}]);
+            });
+        });
+
+        describe('aggregate', () => {
+            it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
+                const query = [{$match: {date: {$gt: new Date()}}}];
+                MockClient.setDbMode('wrongret');
+                mock_col.setColUnorderedBop('throw');
+                let val = false;
+                try {
+                    await instance.count(query);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@count: Failed - Mongo@connect: Failed to create database instance');
+                assert.deepEqual(MockClient.calls, [
+                    {key: 'connect', params: EXPECTED_CON_PAYLOAD},
+                    {key: 'db', params: EXPECTED_DB_PAYLOAD},
+                ]);
+                assert.deepEqual(mock_col.calls, []);
+            });
+
+            it('Should throw when passed valid payload but internal aggregate throws', async () => {
+                const query = [{$match: {date: {$gt: new Date()}}}];
+                mock_col.setColAggregate('throw');
+                let val = false;
+                try {
+                    await instance.count(query);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@count: Failed - MockCollection@aggregate: Oh No!');
+                assert.deepEqual(MockClient.calls, [
+                    {key: 'connect', params: EXPECTED_CON_PAYLOAD},
+                    {key: 'db', params: EXPECTED_DB_PAYLOAD},
+                ]);
+                assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                    ...query,
+                    {$count: 'count'},
+                ]}}]);
+            });
+
+            it('Should throw when passed valid payload but aggregate returns non-array result', async () => {
+                const query = [{$match: {date: {$gt: new Date()}}}];
+                mock_col.setColAggregate('wrongret');
+                let val = false;
+                try {
+                    await instance.count(query);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@count: Failed - Unexpected result');
+                assert.deepEqual(MockClient.calls, [
+                    {key: 'connect', params: EXPECTED_CON_PAYLOAD},
+                    {key: 'db', params: EXPECTED_DB_PAYLOAD},
+                ]);
+                assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                    ...query,
+                    {$count: 'count'},
+                ]}}]);
+            });
+
+            it('Should not throw and return data when passed valid payload and aggregate returns result', async () => {
+                const query = [{$match: {date: {$gt: new Date()}}}];
+                mock_col.setColAggregate('success', [{count: 5}]);
+                const out = await instance.count(query);
+                assert.equal(out, 5);
+                assert.deepEqual(MockClient.calls, [
+                    {key: 'connect', params: EXPECTED_CON_PAYLOAD},
+                    {key: 'db', params: EXPECTED_DB_PAYLOAD},
+                ]);
+                assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                    ...query,
+                    {$count: 'count'},
+                ]}}]);
+            });
+        });
+    });
+
     describe('aggregate', () => {
+        let instance:Query;
+
+        beforeEach(() => {
+            instance = new Query(mdb_instance, 'mycollection');
+        });
+
+
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(Query.aggregate === undefined);
         });
 
         it('Should be an async function', () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             assert.ok(Validator.rules.async_function(instance.aggregate));
             assert.deepEqual(MockClient.calls, []);
             assert.deepEqual(mock_col.calls, []);
         });
 
         it('Should throw when not passed a valid pipeline array', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_ARRAY_WITH_EMPTY) {
                 let val = false;
                 try {
@@ -110,7 +327,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed options that are not an object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
                 let val = false;
@@ -126,7 +342,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed a pipeline array that is empty after sanitization', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.aggregate(CONSTANTS.NOT_OBJECT_WITH_EMPTY);
@@ -140,7 +355,6 @@ describe('Query', () => {
 
         it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
             const pipeline = [{$match: {date: {$gt: new Date()}}}];
-            const instance = new Query(mdb_instance, 'mycollection');
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             let val = false;
@@ -156,7 +370,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal aggregate throws', async () => {
             const pipeline = [{$match: {date: {$gt: new Date()}}}];
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('throw');
             let val = false;
             try {
@@ -171,7 +384,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but aggregate returns non-array result', async () => {
             const pipeline = [{$match: {date: {$gt: new Date()}}}];
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('wrongret');
             let val = false;
             try {
@@ -186,7 +398,6 @@ describe('Query', () => {
 
         it('Should not throw and return data when passed valid payload and aggregate returns result', async () => {
             const pipeline = [{$match: {date: {$gt: new Date()}}}];
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('success');
             const out = await instance.aggregate(pipeline, {allowDiskUse: true});
             assert.deepEqual(out, [{bla: 'bla'}]);
@@ -196,20 +407,24 @@ describe('Query', () => {
     });
 
     describe('findOne', () => {
+        let instance:Query;
+
+        beforeEach(() => {
+            instance = new Query(mdb_instance, 'mycollection');
+        });
+
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(Query.findOne === undefined);
         });
 
         it('Should be an async function', () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             assert.ok(Validator.rules.async_function(instance.findOne));
             assert.deepEqual(MockClient.calls, []);
             assert.deepEqual(mock_col.calls, []);
         });
 
         it('Should throw when not passed a valid query', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
 
@@ -226,7 +441,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed projection that is not an object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
                 let val = false;
@@ -243,7 +457,6 @@ describe('Query', () => {
 
         it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             let val = false;
@@ -259,7 +472,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal aggregate throws', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('throw');
             let val = false;
             try {
@@ -277,7 +489,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but aggregate returns non-array result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('wrongret');
             let val = false;
             try {
@@ -295,7 +506,6 @@ describe('Query', () => {
 
         it('Should not throw and return data when passed valid payload and aggregate returns result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('success');
             const out = await instance.findOne(query);
             assert.deepEqual(out, {bla: 'bla'});
@@ -307,7 +517,6 @@ describe('Query', () => {
         });
 
         it('Should not throw and return data when passed no query payload and aggregate returns result', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('success');
             const out = await instance.findOne();
             assert.deepEqual(out, {bla: 'bla'});
@@ -318,7 +527,6 @@ describe('Query', () => {
         });
 
         it('Should not throw and return data when passed empty query payload and aggregate returns result', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('success');
             const out = await instance.findOne({});
             assert.deepEqual(out, {bla: 'bla'});
@@ -330,7 +538,6 @@ describe('Query', () => {
 
         it('Should not throw and return data when passed empty projection payload and aggregate returns result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('success');
             const out = await instance.findOne(query, {});
             assert.deepEqual(out, {bla: 'bla'});
@@ -343,7 +550,6 @@ describe('Query', () => {
 
         it('Should not throw and return data when passed projection payload and aggregate returns result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('success');
             const out = await instance.findOne(query, {_id: 0, name: 1});
             assert.deepEqual(out, {bla: 'bla'});
@@ -356,7 +562,6 @@ describe('Query', () => {
         });
 
         it('Should not throw and return data when passed empty query and projection payload and aggregate returns result', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColAggregate('success');
             const out = await instance.findOne({}, {_id: 0, name: 1});
             assert.deepEqual(out, {bla: 'bla'});
@@ -369,20 +574,24 @@ describe('Query', () => {
     });
 
     describe('removeOne', () => {
+        let instance:Query;
+
+        beforeEach(() => {
+            instance = new Query(mdb_instance, 'mycollection');
+        });
+
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(Query.removeOne === undefined);
         });
 
         it('Should be an async function', () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             assert.ok(Validator.rules.async_function(instance.removeOne));
             assert.deepEqual(MockClient.calls, []);
             assert.deepEqual(mock_col.calls, []);
         });
 
         it('Should throw when not passed a valid query object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
                 let val = false;
                 try {
@@ -397,7 +606,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed options that are not an object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
                 let val = false;
@@ -414,7 +622,6 @@ describe('Query', () => {
 
         it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             let val = false;
@@ -430,7 +637,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal deleteOne throws', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColDeleteOne('throw');
             let val = false;
             try {
@@ -445,7 +651,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal deleteOne returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColDeleteOne('wrongret');
             let val = false;
             try {
@@ -460,7 +665,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal deleteMany returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColDeleteOne('unack');
             let val = false;
             try {
@@ -475,7 +679,6 @@ describe('Query', () => {
 
         it('Should return result when passed valid payload and internal deleteOne returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColDeleteOne('success');
             const out = await instance.removeOne(query, {ordered: true});
             assert.deepEqual(out, {acknowledged: true, deletedCount: 1});
@@ -485,20 +688,24 @@ describe('Query', () => {
     });
 
     describe('removeMany', () => {
+        let instance:Query;
+
+        beforeEach(() => {
+            instance = new Query(mdb_instance, 'mycollection');
+        });
+
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(Query.removeMany === undefined);
         });
 
         it('Should be an async function', () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             assert.ok(Validator.rules.async_function(instance.removeMany));
             assert.deepEqual(MockClient.calls, []);
             assert.deepEqual(mock_col.calls, []);
         });
 
         it('Should throw when not passed a valid query object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
                 let val = false;
                 try {
@@ -513,7 +720,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed options that are not an object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
                 let val = false;
@@ -530,7 +736,6 @@ describe('Query', () => {
 
         it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             let val = false;
@@ -546,7 +751,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal deleteMany throws', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColDeleteMany('throw');
             let val = false;
             try {
@@ -561,7 +765,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal deleteMany returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColDeleteMany('wrongret');
             let val = false;
             try {
@@ -576,7 +779,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal deleteMany returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColDeleteMany('unack');
             let val = false;
             try {
@@ -591,7 +793,6 @@ describe('Query', () => {
 
         it('Should return result when passed valid payload and internal deleteMany returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColDeleteMany('success');
             const out = await instance.removeMany(query, {ordered: true});
             assert.deepEqual(out, {deletedCount: 42, acknowledged: true});
@@ -601,20 +802,24 @@ describe('Query', () => {
     });
 
     describe('updateOne', () => {
+        let instance:Query;
+
+        beforeEach(() => {
+            instance = new Query(mdb_instance, 'mycollection');
+        });
+
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(Query.updateOne === undefined);
         });
 
         it('Should be an async function', () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             assert.ok(Validator.rules.async_function(instance.updateOne));
             assert.deepEqual(MockClient.calls, []);
             assert.deepEqual(mock_col.calls, []);
         });
 
         it('Should throw when not passed a valid query object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
                 let val = false;
                 try {
@@ -629,7 +834,6 @@ describe('Query', () => {
         });
 
         it('Should throw when not passed a valid data object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
                 if (Array.isArray(el)) continue;
                 let val = false;
@@ -658,7 +862,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed options that are not an object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
                 let val = false;
@@ -674,7 +877,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed an update pipeline that contains non-objects', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.updateOne({date: {$gt: new Date()}}, CONSTANTS.NOT_OBJECT_WITH_EMPTY);
@@ -688,7 +890,6 @@ describe('Query', () => {
 
         it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             let val = false;
@@ -704,7 +905,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal updateOne throws', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUpdateOne('throw');
             let val = false;
             try {
@@ -719,7 +919,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal updateOne returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUpdateOne('wrongret');
             let val = false;
             try {
@@ -734,7 +933,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal updateOne returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUpdateOne('unack');
             let val = false;
             try {
@@ -749,7 +947,6 @@ describe('Query', () => {
 
         it('Should return result when passed valid payload and internal updateOne returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUpdateOne('success');
             const out = await instance.updateOne(query, {$inc: {count: 1}}, {upsert: false});
             assert.deepEqual(out, {matchedCount: 1, modifiedCount: 1, upsertedCount: 0, acknowledged: true});
@@ -759,20 +956,24 @@ describe('Query', () => {
     });
 
     describe('updateMany', () => {
+        let instance:Query;
+
+        beforeEach(() => {
+            instance = new Query(mdb_instance, 'mycollection');
+        });
+
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(Query.updateMany === undefined);
         });
 
         it('Should be an async function', () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             assert.ok(Validator.rules.async_function(instance.updateMany));
             assert.deepEqual(MockClient.calls, []);
             assert.deepEqual(mock_col.calls, []);
         });
 
         it('Should throw when not passed a valid query object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
                 let val = false;
                 try {
@@ -787,7 +988,6 @@ describe('Query', () => {
         });
 
         it('Should throw when not passed a valid data object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
                 if (Array.isArray(el)) continue;
                 let val = false;
@@ -816,7 +1016,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed options that are not an object', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
                 let val = false;
@@ -832,7 +1031,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed an update pipeline that contains non-objects', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.updateMany({date: {$gt: new Date()}}, CONSTANTS.NOT_OBJECT_WITH_EMPTY);
@@ -846,7 +1044,6 @@ describe('Query', () => {
 
         it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             let val = false;
@@ -862,7 +1059,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal updateMany throws', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUpdateMany('throw');
             let val = false;
             try {
@@ -877,7 +1073,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal updateMany returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUpdateMany('wrongret');
             let val = false;
             try {
@@ -892,7 +1087,6 @@ describe('Query', () => {
 
         it('Should throw when passed valid payload but internal updateMany returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUpdateMany('unack');
             let val = false;
             try {
@@ -907,7 +1101,6 @@ describe('Query', () => {
 
         it('Should return result when passed valid payload and internal updateMany returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUpdateMany('success');
             const out = await instance.updateMany(query, {$inc: {count: 1}}, {upsert: false});
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
@@ -917,20 +1110,24 @@ describe('Query', () => {
     });
 
     describe('insertMany', () => {
+        let instance:Query;
+
+        beforeEach(() => {
+            instance = new Query(mdb_instance, 'mycollection');
+        });
+
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(Query.insertMany === undefined);
         });
 
         it('Should be an async function', () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             assert.ok(Validator.rules.async_function(instance.insertMany));
             assert.deepEqual(MockClient.calls, []);
             assert.deepEqual(mock_col.calls, []);
         });
 
         it('Should throw when not passed a valid documents array', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_ARRAY_WITH_EMPTY) {
                 let val = false;
                 try {
@@ -945,7 +1142,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed a documents array that is empty after sanitization', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.insertMany(CONSTANTS.NOT_OBJECT_WITH_EMPTY);
@@ -958,7 +1154,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed a documents array but we fail to acquire a connection', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             let val = false;
@@ -978,7 +1173,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed a documents array but we fail to create a bulk operator due to it throwing', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUnorderedBop('throw');
             let val = false;
             try {
@@ -997,7 +1191,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed a documents array but we fail to create a bulk operator due to it returning a bad val', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUnorderedBop('wrongret');
             let val = false;
             try {
@@ -1016,7 +1209,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed a documents array but exec on bulk operator throws', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUnorderedBop('success');
             MockUnorderedBulkOp.setModeExec('throw');
             let val = false;
@@ -1041,7 +1233,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed a document array and execute succeeds but not all documents were inserted', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUnorderedBop('success');
             MockUnorderedBulkOp.setModeExec('success');
             let val = false;
@@ -1066,7 +1257,6 @@ describe('Query', () => {
         });
 
         it('Should succeed when passed a document array and all documents were inserted', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             mock_col.setColUnorderedBop('success');
             MockUnorderedBulkOp.setModeExec('success', {insertedCount: 2});
             const out = await instance.insertMany([
@@ -1087,20 +1277,24 @@ describe('Query', () => {
     });
 
     describe('bulkOps', () => {
+        let instance:Query;
+
+        beforeEach(() => {
+            instance = new Query(mdb_instance, 'mycollection');
+        });
+
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(Query.bulkOps === undefined);
         });
 
         it('Should be an async function', () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             assert.ok(Validator.rules.async_function(instance.bulkOps));
             assert.deepEqual(MockClient.calls, []);
             assert.deepEqual(mock_col.calls, []);
         });
 
         it('Should throw when passed a non-function fn', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_FUNCTION) {
                 let val = false;
                 try {
@@ -1117,7 +1311,6 @@ describe('Query', () => {
         });
 
         it('Should throw when passed a non-boolean sort', async () => {
-            const instance = new Query(mdb_instance, 'mycollection');
             for (const el of CONSTANTS.NOT_BOOLEAN) {
                 if (el === undefined) continue;
 
@@ -1139,7 +1332,6 @@ describe('Query', () => {
             mock_col.setColUnorderedBop('throw');
             MockClient.setDbMode('wrongret');
 
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.bulkOps(operator => operator.insert({bla: true}), false);
@@ -1156,7 +1348,6 @@ describe('Query', () => {
         it('Should throw when passed a valid payload but fail to acquire an unordered bulk operator due to it throwing', async () => {
             mock_col.setColUnorderedBop('throw');
 
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.bulkOps(operator => operator.insert({bla: true}), false);
@@ -1173,7 +1364,6 @@ describe('Query', () => {
         it('Should throw when passed a valid payload but fail to acquire an ordered bulk operator due to it throwing', async () => {
             mock_col.setColOrderedBop('throw');
 
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.bulkOps(operator => operator.insert({bla: true}), true);
@@ -1190,7 +1380,6 @@ describe('Query', () => {
         it('Should throw when passed a valid payload but fail to acquire an unordered bulk operator due to returning wrong', async () => {
             mock_col.setColUnorderedBop('wrongret');
 
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.bulkOps(operator => operator.insert({bla: true}), false);
@@ -1207,7 +1396,6 @@ describe('Query', () => {
         it('Should throw when passed a valid payload but fail to acquire an ordered bulk operator due to returning wrong', async () => {
             mock_col.setColOrderedBop('wrongret');
 
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.bulkOps(operator => operator.insert({bla: true}), true);
@@ -1225,7 +1413,6 @@ describe('Query', () => {
             mock_col.setColUnorderedBop('success');
             MockUnorderedBulkOp.setModeExec('throw');
 
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.bulkOps(operator => operator.insert({bla: true}), false);
@@ -1247,7 +1434,6 @@ describe('Query', () => {
             mock_col.setColOrderedBop('success');
             MockOrderedBulkOp.setModeExec('throw');
 
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.bulkOps(operator => operator.insert({bla: true}), true);
@@ -1269,7 +1455,6 @@ describe('Query', () => {
             mock_col.setColUnorderedBop('success');
             MockUnorderedBulkOp.setModeExec('wrongret');
 
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.bulkOps(operator => operator.insert({bla: true}), false);
@@ -1291,7 +1476,6 @@ describe('Query', () => {
             mock_col.setColOrderedBop('success');
             MockOrderedBulkOp.setModeExec('wrongret');
 
-            const instance = new Query(mdb_instance, 'mycollection');
             let val = false;
             try {
                 await instance.bulkOps(operator => operator.insert({bla: true}), true);
@@ -1313,7 +1497,6 @@ describe('Query', () => {
             mock_col.setColUnorderedBop('success');
             MockUnorderedBulkOp.setModeExec('success', {yay: true});
 
-            const instance = new Query(mdb_instance, 'mycollection');
             const out = await instance.bulkOps(operator => operator.insert({bla: true}), false);
             assert.deepEqual(out, {yay: true});
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
@@ -1330,7 +1513,6 @@ describe('Query', () => {
             mock_col.setColOrderedBop('success');
             MockOrderedBulkOp.setModeExec('success', {yay: true});
 
-            const instance = new Query(mdb_instance, 'mycollection');
             const out = await instance.bulkOps(operator => operator.insert({bla: true}), true);
             assert.deepEqual(out, {yay: true});
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
@@ -1347,7 +1529,6 @@ describe('Query', () => {
             mock_col.setColOrderedBop('success');
             MockOrderedBulkOp.setModeExec('success', {yay: true});
 
-            const instance = new Query(mdb_instance, 'mycollection');
             const out = await instance.bulkOps(async operator => operator.insert({bla: true}), true);
             assert.deepEqual(out, {yay: true});
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);

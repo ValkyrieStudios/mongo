@@ -640,10 +640,10 @@ class Mongo {
      * @returns {Promise<Query>} Instance of query
      * @throws {Error} When invalid options are passed
      */
-    query (collection:string):Query {
+    query <T extends Document> (collection:string):Query<T> {
         if (!isNotEmptyString(collection)) throw new Error('Mongo@query: Collection should be a non-empty string');
 
-        return new Query(this, collection.trim());
+        return new Query<T>(this, collection.trim());
     }
 
     /**
@@ -665,7 +665,7 @@ class Mongo {
         }
         if (!isNeArray(s_pipe)) throw new Error('Mongo@aggregate: Pipeline empty after sanitization');
 
-        return new Query(this, collection.trim()).aggregate<T>(s_pipe);
+        return new Query<T>(this, collection.trim()).aggregate<T>(s_pipe);
     }
 
     /**

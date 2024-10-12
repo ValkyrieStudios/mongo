@@ -383,7 +383,10 @@ For example let's say we wanted a query instance for a particular collection to 
 ```typescript
 import MyMongo from './Mongo';
 
-const qUser = MyMongo.query('users');
+const qUser = MyMongo.query<{
+    uid: string;
+    name: string;
+}>('users');
 
 ...
 
@@ -396,6 +399,9 @@ const user = await qUser.aggregate([
 
 /* Remove peter */
 if (Array.isArray(user) && user.length) await qUser.removeOne({uid: {$eq: user[0].uid}});
+
+/* Typescript will complain here as 'id' does not exist */
+if (Array.isArray(user) && user.length) await qUser.removeOne({uid: {$eq: user[0].id}});
 ```
 
 We can of course also use it immediately like so:
@@ -469,28 +475,27 @@ or it could be assigned to a variable and used repeatedly, and as such could for
 ```typescript
 import MyMongo from './Mongo';
 
-let qUser = MyMongo.query('users');
-
-type User {
+type User = {
     uid:string;
     first_name:string;
     last_name:string;
-}
+};
+
+let qUser = MyMongo.query<User>('users');
 
 class User {
     ...
-    static async one (uid:string):Promise<User|false> {
-        if (typeof uid !== 'string' || !uid.length) return false;
+    static async one (uid:string) {
+        if (typeof uid !== 'string' || !uid.length) return null;
 
-        const users = await qUser.aggregate<User>([
-            {$match: {uid: {$eq: uid}}},
-            {$limit: 1},
-        ]);
-        return Array.isArray(users) && users.length ? users[0] : false;
+        return await qUser.findOne({uid: {$eq: uid}}) || null;
     }
     ...
 }
 ```
+
+**Important Note:** Assigning a type to the query instance eg: `const qUser = MyMongo.query<User>('users');` will give type safety on
+find/update/remove method calls by design.
 
 The below sections describe all the methods available on a Query instance.
 

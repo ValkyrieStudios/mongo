@@ -21,7 +21,7 @@ import {
 type BulkOperator = OrderedBulkOperation|UnorderedBulkOperation;
 type BulkOperatorFunction = (operator:BulkOperator) => void;
 
-class Query {
+class Query <TModel extends Document> {
 
     /* Instance of @valkyriestudios/mongo the query is running against */
     #instance:Mongo;
@@ -76,7 +76,7 @@ class Query {
      * @returns {Promise<Document|null>} The found document or null
      * @throws {Error} when provided query or connection fails
      */
-    async findOne <T extends Document> (query?:Filter<Document>, projection?:Document):Promise<T|null> {
+    async findOne <T extends TModel> (query?:Filter<TModel>, projection?:Document):Promise<T|null> {
         if (
             query !== undefined &&
             !isObject(query)
@@ -110,7 +110,7 @@ class Query {
      * @returns {Promise<DeleteResult>} Result of the query
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async removeOne (query:Filter<Document>, options:DeleteOptions = {}):Promise<DeleteResult> {
+    async removeOne (query:Filter<TModel>, options:DeleteOptions = {}):Promise<DeleteResult> {
         if (!isNeObject(query)) throw new Error('MongoQuery@removeOne: Query should be an object with content');
         if (!isObject(options)) throw new Error('MongoQuery@removeOne: Options should be an object');
 
@@ -119,7 +119,7 @@ class Query {
             const db = await this.#instance.connect();
 
             /* Run query */
-            const result = await db.collection(this.#col).deleteOne(query, options);
+            const result = await db.collection(this.#col).deleteOne(query as Filter<Document>, options);
             if (!result?.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
@@ -135,7 +135,7 @@ class Query {
      * @returns {Promise<DeleteResult>} Result of the query
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async removeMany (query:Filter<Document>, options:DeleteOptions = {}):Promise<DeleteResult> {
+    async removeMany (query:Filter<TModel>, options:DeleteOptions = {}):Promise<DeleteResult> {
         if (!isNeObject(query)) throw new Error('MongoQuery@removeMany: Query should be an object with content');
         if (!isObject(options)) throw new Error('MongoQuery@removeMany: Options should be an object');
 
@@ -144,7 +144,7 @@ class Query {
             const db = await this.#instance.connect();
 
             /* Run query */
-            const result = await db.collection(this.#col).deleteMany(query, options);
+            const result = await db.collection(this.#col).deleteMany(query as Filter<Document>, options);
             if (!result?.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
@@ -161,7 +161,7 @@ class Query {
      * @returns {Promise<UpdateResult>} Result of the query
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async updateOne (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions = {}):Promise<UpdateResult> {
+    async updateOne (query:Filter<TModel>, data:UpdateFilter<TModel>, options:UpdateOptions = {}):Promise<UpdateResult> {
         if (!isNeObject(query)) throw new Error('MongoQuery@updateOne: Query should be an object with content');
         if (!isNeObject(data) && !isNeArray(data)) throw new Error('MongoQuery@updateOne: Data should be an object/array with content');
         if (!isObject(options)) throw new Error('MongoQuery@updateOne: Options should be an object');
@@ -174,7 +174,7 @@ class Query {
             const db = await this.#instance.connect();
 
             /* Run query */
-            const result = await db.collection(this.#col).updateOne(query, data, options);
+            const result = await db.collection(this.#col).updateOne(query as Filter<Document>, data as UpdateFilter<Document>, options);
             if (!result?.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
@@ -191,7 +191,7 @@ class Query {
      * @returns {Promise<UpdateResult>} Result of the query
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async updateMany (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions = {}):Promise<UpdateResult> {
+    async updateMany (query:Filter<TModel>, data:UpdateFilter<TModel>, options:UpdateOptions = {}):Promise<UpdateResult> {
         if (!isNeObject(query)) throw new Error('MongoQuery@updateMany: Query should be an object with content');
         if (!isNeObject(data) && !isNeArray(data)) throw new Error('MongoQuery@updateMany: Data should be an object/array with content');
         if (!isObject(options)) throw new Error('MongoQuery@updateMany: Options should be an object');
@@ -204,7 +204,7 @@ class Query {
             const db = await this.#instance.connect();
 
             /* Run query */
-            const result = await db.collection(this.#col).updateMany(query, data, options);
+            const result = await db.collection(this.#col).updateMany(query as Filter<Document>, data as UpdateFilter<Document>, options);
             if (!result?.acknowledged) throw new Error('Unacknowledged');
             return result;
         } catch (err) {
@@ -219,7 +219,7 @@ class Query {
      * @returns {Promise<BulkWriteResult>} Result of the query
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async insertMany (documents:Document[]):Promise<BulkWriteResult> {
+    async insertMany (documents:TModel[]):Promise<BulkWriteResult> {
         if (!isNeArray(documents)) throw new Error('MongoQuery@insertMany: Documents should be an array with content');
 
         const normalized_documents = dedupe(documents, {filter_fn: isNeObject});

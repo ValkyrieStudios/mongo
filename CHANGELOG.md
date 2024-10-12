@@ -7,6 +7,39 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 ### Improved
+- **dx**: Query now listens to a generic passed to it and as such can be made type-safe on find/update/remove method calls
+```typescript
+type User = {
+    uid: string;
+    firstName: string;
+    lastName: string;
+    type: 'user' | 'admin';
+    isActive: boolean;
+};
+
+const instance = MyMongo.query<User>('users');
+
+/* Typescript will complain here as 'hello' is not a valid value for boolean */
+instance.findOne({isActive: {$eq: 'hello'}});
+
+/* Typescript will complain here as 'hello' is not a valid value for boolean */
+instance.removeOne({isActive: {$eq: 'hello'}});
+
+/* Typescript will complain here as 0 is not a valid value for isActive */
+instance.updateMany(
+    {isActive: {$eq: 0}},
+    {$set: {firstName: 'Peter'}}
+);
+
+/* Typescript will complain here as false is not a valid value for firstName */
+instance.updateMany(
+    {isActive: {$eq: false}},
+    {$set: {firstName: false}}
+);
+
+/* The result here will be typed as User */
+const user = instance.findOne({uid: {$eq: '123456'}});
+```
 - **perf**: Improved on regex efficiency regarding validation of mongo uri in new uri connect options (1.19.0)
 - **deps**: Upgrade @types/node to 20.16.11
 - **deps**: Upgrade typescript to 5.6.3

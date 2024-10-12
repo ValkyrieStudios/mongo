@@ -7,6 +7,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 ### Improved
+- **perf**: Improved on regex efficiency regarding validation of mongo uri in new uri connect options (1.19.0)
 - **deps**: Upgrade @types/node to 20.16.11
 - **deps**: Upgrade typescript to 5.6.3
 - **deps**: Upgrade typescript-eslint to 8.8.1

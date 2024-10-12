@@ -121,7 +121,7 @@ Validator.extendEnum({
 });
 
 Validator.extendRegex({
-    valkyrie_mongo_uri: /^(mongodb(?:\+srv)?):\/\/(?:([^:@]+)(?::([^@]+))?@)?([^/:]+(?::\d+)?(?:,[^/:]+(?::\d+)?)*)(?:\/([^/?]+)?)?(?:\?(.*))?$/, /* eslint-disable-line max-len */
+    valkyrie_mongo_uri: /^(mongodb(?:\+srv)?):\/\/(?:([^:@]+)(?::([^@]+))?@)?([A-Za-z0-9.-]+(?::\d+)?(?:,[^/:]+(?::\d+)?)*)(?:\/([^/?]+)?)?(?:\?(.*))?$/, /* eslint-disable-line max-len */
 });
 
 Validator.extendSchema<CollectionIndexStructure>('valkyrie_mongo_collection_structure_index', {

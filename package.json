@@ -34,16 +34,16 @@
     },
     "homepage": "https://github.com/ValkyrieStudios/mongo#README.md",
     "dependencies": {
-        "@valkyriestudios/utils": "^12.29.0",
-        "@valkyriestudios/validator": "^9.29.0",
-        "mongodb": "^6.11.0"
+        "@valkyriestudios/utils": "^12.31.1",
+        "@valkyriestudios/validator": "^10.0.0",
+        "mongodb": "^6.13.0"
     },
     "devDependencies": {
-        "@types/node": "^22.10.1",
+        "@types/node": "^22.13.4",
         "esbuild-register": "^3.6.0",
-        "eslint": "^9.16.0",
+        "eslint": "^9.20.1",
         "nyc": "^17.1.0",
-        "typescript": "^5.7.2",
-        "typescript-eslint": "^8.16.0"
+        "typescript": "^5.7.3",
+        "typescript-eslint": "^8.24.0"
     }
 }

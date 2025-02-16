@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2025-02-16
 ### Added
 - **feat**: You can now pass your own log function as part of the options to a mongo instance. This log function will receive an object containing level, fn, msg, (optional) err and data. Important to note that **logging will only happen if debug is passed as true**. Here's an example log function:
 ```typescript

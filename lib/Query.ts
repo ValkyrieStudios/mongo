@@ -71,7 +71,8 @@ class Query <TModel extends Document = Document> {
 
                 /* Run query */
                 result = [{
-                    count: await db.collection(this.#col).count(isObject(filter) ? filter as Filter<Document> : undefined, options),
+                    count: await db.collection(this.#col)
+                        .countDocuments(isObject(filter) ? filter as Filter<Document> : undefined, options),
                 }];
             }
 

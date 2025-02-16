@@ -7,6 +7,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 ### Improved
+- **feat**: Query@count will now make use of the countDocuments interface instead of count as the latter is deprecated.
 - **deps**: Upgrade @valkyriestudios/utils to 12.31.1
 - **deps**: Upgrade @valkyriestudios/validator to 10.0.0
 - **deps**: Upgrade mongodb to 6.13.0

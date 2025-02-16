@@ -28,14 +28,8 @@ const mongo = new Mongo({
 - **feat**: Query@insertOne - Added ability to run a single insertion
 
 ### Improved
+- **dx**: Added an exports block to package.json
 - **feat**: Query@findOne now makes use of native findOne rather than an aggregation pipeline
-- **feat**: Query@bulkOps will now return null rather than throw on system failure, instead logging the error to the new logger interface
-- **feat**: Query@aggregate will now return an empty array rather than throw on system failure, instead logging the error to the new logger interface
-- **feat**: Query@removeOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
-- **feat**: Query@removeMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
-- **feat**: Query@updateOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
-- **feat**: Query@updateMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
-- **feat**: Query@insertMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@count will now make use of the countDocuments interface instead of count as the latter is deprecated.
 - **deps**: Upgrade @valkyriestudios/utils to 12.31.1
 - **deps**: Upgrade @valkyriestudios/validator to 10.0.0
@@ -44,6 +38,15 @@ const mongo = new Mongo({
 - **deps**: Upgrade eslint to 9.20.1
 - **deps**: Upgrade typescript to 5.7.3
 - **deps**: Upgrade typescript-eslint to 8.24.0
+
+### Breaking
+- **feat**: Query@bulkOps will now return null rather than throw on system failure, instead logging the error to the new logger interface
+- **feat**: Query@aggregate will now return an empty array rather than throw on system failure, instead logging the error to the new logger interface
+- **feat**: Query@removeOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
+- **feat**: Query@removeMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
+- **feat**: Query@updateOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
+- **feat**: Query@updateMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
+- **feat**: Query@insertMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 
 ## [1.22.0] - 2024-11-30
 ### Improved

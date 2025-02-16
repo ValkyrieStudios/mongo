@@ -33,6 +33,47 @@
         "url": "https://github.com/ValkyrieStudios/mongo/issues"
     },
     "homepage": "https://github.com/ValkyrieStudios/mongo#README.md",
+    "types": "index.d.ts",
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "import": {
+                "default": "./index.js",
+                "types": "./index.d.ts"
+            },
+            "require": {
+                "default": "./index.js",
+                "types": "./index.d.ts"
+            },
+            "default": "./index.js",
+            "types": "./index.d.ts"
+        },
+        "./Query": {
+            "import": {
+                "default": "./Query.js",
+                "types": "./Query.d.ts"
+            },
+            "require": {
+                "default": "./Query.js",
+                "types": "./Query.d.ts"
+            },
+            "default": "./Query.js",
+            "types": "./Query.d.ts"
+        },
+        "./Types": {
+            "import": {
+                "default": "./Types.js",
+                "types": "./Types.d.ts"
+            },
+            "require": {
+                "default": "./Types.js",
+                "types": "./Types.d.ts"
+            },
+            "default": "./Types.js",
+            "types": "./Types.d.ts"
+        },
+        "./package.json": "./package.json",
+    },
     "dependencies": {
         "@valkyriestudios/utils": "^12.31.1",
         "@valkyriestudios/validator": "^10.0.0",

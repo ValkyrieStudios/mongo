@@ -11,6 +11,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Improved
 - **feat**: Query@findOne now makes use of native findOne rather than an aggregation pipeline
+- **feat**: Query@bulkOps will now return null rather than throw on system failure, instead logging the error to the new logger interface
+- **feat**: Query@aggregate will now return an empty array rather than throw on system failure, instead logging the error to the new logger interface
 - **feat**: Query@removeOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@removeMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@updateOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface

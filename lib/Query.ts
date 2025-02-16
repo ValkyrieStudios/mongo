@@ -96,8 +96,7 @@ class Query <TModel extends Document = Document> {
      *
      * @param {Document[]} pipeline - Pipeline array to run
      * @param {AggregateOptions} options - (default={}) Aggregation options
-     * @returns {Promise<Document[]>} Array of documents
-     * @throws {Error} When provided options are invalid or connection fails
+     * @returns {Promise<Document[]>} Array of documents - Null is returned when aggregation fails
      */
     async aggregate <T extends Document> (pipeline:Document[], options:AggregateOptions = {}):Promise<T[]> {
         if (!isNeArray(pipeline)) throw new Error('MongoQuery@aggregrate: Pipeline should be an array with content');
@@ -115,9 +114,22 @@ class Query <TModel extends Document = Document> {
             /* Run query */
             const result = await db.collection(this.#col).aggregate(normalized_pipeline, options).toArray();
             if (!isArray(result)) throw new Error('Unexpected result');
+            this.#log({
+                level: LogLevel.DEBUG,
+                fn: 'MongoQuery@aggregate',
+                msg: 'Pipeline run',
+                data: {pipeline: normalized_pipeline, options},
+            });
             return result as T[];
         } catch (err) {
-            throw new Error(`MongoQuery@aggregate: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
+            this.#log({
+                level: LogLevel.ERROR,
+                fn: 'MongoQuery@aggregate',
+                msg: 'Failed to run aggregation',
+                err: err as Error,
+                data: {pipeline: normalized_pipeline, options},
+            });
+            return [];
         }
     }
 
@@ -399,10 +411,10 @@ class Query <TModel extends Document = Document> {
      *
      * @param {BulkOperatorFunction} fn - Bulk operations callback function
      * @param {boolean} sorted - Whether or not an unordered (false) or ordered (true) bulk operation should be used
-     * @returns {Promise<BulkWriteResult>} Result of the query
+     * @returns {Promise<BulkWriteResult|null>} Result of the query
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async bulkOps (fn:BulkOperatorFunction, sorted:boolean = false):Promise<BulkWriteResult> {
+    async bulkOps (fn:BulkOperatorFunction, sorted:boolean = false):Promise<BulkWriteResult|null> {
         if (!isFunction(fn)) throw new Error('MongoQuery@bulkOps: Fn should be a function');
         if (!isBoolean(sorted)) throw new Error('MongoQuery@bulkOps: Sorted should be a boolean');
 
@@ -425,9 +437,23 @@ class Query <TModel extends Document = Document> {
             const result = await bulk_operator.execute();
             if (!isObject(result)) throw new Error('Unexpected result');
 
+            this.#log({
+                level: LogLevel.DEBUG,
+                fn: 'MongoQuery@bulkOps',
+                msg: 'Ran bulk operation',
+                data: {sorted},
+            });
+
             return result;
         } catch (err) {
-            throw new Error(`MongoQuery@bulkOps: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
+            this.#log({
+                level: LogLevel.ERROR,
+                fn: 'MongoQuery@bulkOps',
+                msg: 'Failed to run bulk operation',
+                err: err as Error,
+                data: {sorted},
+            });
+            return null;
         }
     }
 

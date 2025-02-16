@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable max-lines */
 
 import Validator                                from '@valkyriestudios/validator';
@@ -37,10 +38,12 @@ const EXPECTED_DB_PAYLOAD = {
 describe('Query', () => {
     const mock_col = new MockCollection('mycollection');
     const mockConsoleInfo = new MockFn();
+    const mockConsoleError = new MockFn();
     let mdb_instance;
 
     beforeEach(() => {
         mockConsoleInfo.mock(console, 'info');
+        mockConsoleError.mock(console, 'error');
         mock_col.reset();
         MockClient.mock();
         MockDb.setMockCol(mock_col);
@@ -52,6 +55,7 @@ describe('Query', () => {
 
     afterEach(() => {
         mockConsoleInfo.restore();
+        mockConsoleError.restore();
         MockClient.restore();
     });
 
@@ -228,7 +232,7 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@count: Failed - Mongo@connect: Failed to create database instance');
+                assert.equal(val, 'MongoQuery@count: Failed - Unexpected result');
                 assert.deepEqual(MockClient.calls, [
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
@@ -245,7 +249,7 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@count: Failed - MockCollection@aggregate: Oh No!');
+                assert.equal(val, 'MongoQuery@count: Failed - Unexpected result');
                 assert.deepEqual(MockClient.calls, [
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
@@ -353,45 +357,30 @@ describe('Query', () => {
             assert.deepEqual(mock_col.calls, []);
         });
 
-        it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
+        it('Should return an empty array when passed a valid payload but we fail to acquire a connection', async () => {
             const pipeline = [{$match: {date: {$gt: new Date()}}}];
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
-            let val = false;
-            try {
-                await instance.aggregate(pipeline);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@aggregate: Failed - Mongo@connect: Failed to create database instance');
+            const out = await instance.aggregate(pipeline);
+            assert.deepEqual(out, []);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, []);
         });
 
-        it('Should throw when passed valid payload but internal aggregate throws', async () => {
+        it('Should return an empty array when passed valid payload but internal aggregate throws', async () => {
             const pipeline = [{$match: {date: {$gt: new Date()}}}];
             mock_col.setColAggregate('throw');
-            let val = false;
-            try {
-                await instance.aggregate(pipeline);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@aggregate: Failed - MockCollection@aggregate: Oh No!');
+            const out = await instance.aggregate(pipeline);
+            assert.deepEqual(out, []);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline}}]);
         });
 
-        it('Should throw when passed valid payload but aggregate returns non-array result', async () => {
+        it('Should return an empty array when passed valid payload but aggregate returns non-array result', async () => {
             const pipeline = [{$match: {date: {$gt: new Date()}}}];
             mock_col.setColAggregate('wrongret');
-            let val = false;
-            try {
-                await instance.aggregate(pipeline, {allowDiskUse: true});
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@aggregate: Failed - Unexpected result');
+            const out = await instance.aggregate(pipeline, {allowDiskUse: true});
+            assert.deepEqual(out, []);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {allowDiskUse: true}, pipeline}}]);
         });
@@ -458,7 +447,6 @@ describe('Query', () => {
         it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
             const query = {date: {$gt: new Date()}};
             MockClient.setDbMode('wrongret');
-            mock_col.setColUnorderedBop('throw');
             let val = false;
             try {
                 await instance.findOne(query);
@@ -470,106 +458,36 @@ describe('Query', () => {
             assert.deepEqual(mock_col.calls, []);
         });
 
-        it('Should throw when passed valid payload but internal aggregate throws', async () => {
+        it('Should throw when passed valid payload but internal findOne throws', async () => {
             const query = {date: {$gt: new Date()}};
-            mock_col.setColAggregate('throw');
+            mock_col.setColFindOne('throw');
             let val = false;
             try {
                 await instance.findOne(query);
             } catch (err) {
                 val = err.message;
             }
-            assert.equal(val, 'MongoQuery@findOne: Failed - MockCollection@aggregate: Oh No!');
+            assert.equal(val, 'MongoQuery@findOne: Failed - MockCollection@findOne: Oh No!');
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
-                {$match: query},
-                {$limit: 1},
-            ]}}]);
+            assert.deepEqual(mock_col.calls, [{key: 'findOne', params: {options: undefined, query}}]);
         });
 
-        it('Should throw when passed valid payload but aggregate returns non-array result', async () => {
+        it('Should return null when passed valid payload and internal findOne returns wrong result', async () => {
             const query = {date: {$gt: new Date()}};
-            mock_col.setColAggregate('wrongret');
-            let val = false;
-            try {
-                await instance.findOne(query);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@findOne: Failed - Unexpected result');
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
-                {$match: query},
-                {$limit: 1},
-            ]}}]);
-        });
-
-        it('Should not throw and return data when passed valid payload and aggregate returns result', async () => {
-            const query = {date: {$gt: new Date()}};
-            mock_col.setColAggregate('success');
+            mock_col.setColFindOne('wrongret');
             const out = await instance.findOne(query);
-            assert.deepEqual(out, {bla: 'bla'});
+            assert.equal(out, null);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
-                {$match: query},
-                {$limit: 1},
-            ]}}]);
+            assert.deepEqual(mock_col.calls, [{key: 'findOne', params: {options: undefined, query}}]);
         });
 
-        it('Should not throw and return data when passed no query payload and aggregate returns result', async () => {
-            mock_col.setColAggregate('success');
-            const out = await instance.findOne();
-            assert.deepEqual(out, {bla: 'bla'});
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
-                {$limit: 1},
-            ]}}]);
-        });
-
-        it('Should not throw and return data when passed empty query payload and aggregate returns result', async () => {
-            mock_col.setColAggregate('success');
-            const out = await instance.findOne({});
-            assert.deepEqual(out, {bla: 'bla'});
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
-                {$limit: 1},
-            ]}}]);
-        });
-
-        it('Should not throw and return data when passed empty projection payload and aggregate returns result', async () => {
+        it('Should not throw and return data when passed valid payload and findOne returns result', async () => {
             const query = {date: {$gt: new Date()}};
-            mock_col.setColAggregate('success');
-            const out = await instance.findOne(query, {});
+            mock_col.setColFindOne('success');
+            const out = await instance.findOne(query, {hello: 1});
             assert.deepEqual(out, {bla: 'bla'});
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
-                {$match: query},
-                {$limit: 1},
-            ]}}]);
-        });
-
-        it('Should not throw and return data when passed projection payload and aggregate returns result', async () => {
-            const query = {date: {$gt: new Date()}};
-            mock_col.setColAggregate('success');
-            const out = await instance.findOne(query, {_id: 0, name: 1});
-            assert.deepEqual(out, {bla: 'bla'});
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
-                {$match: query},
-                {$limit: 1},
-                {$project: {_id: 0, name: 1}},
-            ]}}]);
-        });
-
-        it('Should not throw and return data when passed empty query and projection payload and aggregate returns result', async () => {
-            mock_col.setColAggregate('success');
-            const out = await instance.findOne({}, {_id: 0, name: 1});
-            assert.deepEqual(out, {bla: 'bla'});
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
-                {$limit: 1},
-                {$project: {_id: 0, name: 1}},
-            ]}}]);
+            assert.deepEqual(mock_col.calls, [{key: 'findOne', params: {options: {projection: {hello: 1}}, query}}]);
         });
     });
 
@@ -624,13 +542,8 @@ describe('Query', () => {
             const query = {date: {$gt: new Date()}};
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
-            let val = false;
-            try {
-                await instance.removeOne(query);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@removeOne: Failed - Mongo@connect: Failed to create database instance');
+            const out = await instance.removeOne(query);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, []);
         });
@@ -638,13 +551,8 @@ describe('Query', () => {
         it('Should throw when passed valid payload but internal deleteOne throws', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteOne('throw');
-            let val = false;
-            try {
-                await instance.removeOne(query);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@removeOne: Failed - MockCollection@deleteOne: Oh No!');
+            const out = await instance.removeOne(query);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'deleteOne', params: {options: {}, query}}]);
         });
@@ -652,13 +560,8 @@ describe('Query', () => {
         it('Should throw when passed valid payload but internal deleteOne returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteOne('wrongret');
-            let val = false;
-            try {
-                await instance.removeOne(query);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@removeOne: Failed - Unacknowledged');
+            const out = await instance.removeOne(query);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'deleteOne', params: {options: {}, query}}]);
         });
@@ -666,22 +569,17 @@ describe('Query', () => {
         it('Should throw when passed valid payload but internal deleteMany returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteOne('unack');
-            let val = false;
-            try {
-                await instance.removeOne(query);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@removeOne: Failed - Unacknowledged');
+            const out = await instance.removeOne(query);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'deleteOne', params: {options: {}, query}}]);
         });
 
-        it('Should return result when passed valid payload and internal deleteOne returns valid result', async () => {
+        it('Should return true when passed valid payload and internal deleteOne returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteOne('success');
             const out = await instance.removeOne(query, {ordered: true});
-            assert.deepEqual(out, {acknowledged: true, deletedCount: 1});
+            assert.equal(out, true);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'deleteOne', params: {options: {ordered: true}, query}}]);
         });
@@ -734,68 +632,48 @@ describe('Query', () => {
             }
         });
 
-        it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
+        it('Should return false when passed a valid payload but we fail to acquire a connection', async () => {
             const query = {date: {$gt: new Date()}};
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
-            let val = false;
-            try {
-                await instance.removeMany(query);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@removeMany: Failed - Mongo@connect: Failed to create database instance');
+            const out = await instance.removeMany(query);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, []);
         });
 
-        it('Should throw when passed valid payload but internal deleteMany throws', async () => {
+        it('Should return false when passed valid payload but internal deleteMany throws', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteMany('throw');
-            let val = false;
-            try {
-                await instance.removeMany(query);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@removeMany: Failed - MockCollection@deleteMany: Oh No!');
+            const out = await instance.removeMany(query);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'deleteMany', params: {options: {}, query}}]);
         });
 
-        it('Should throw when passed valid payload but internal deleteMany returns a non-object result', async () => {
+        it('Should return false when passed valid payload but internal deleteMany returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteMany('wrongret');
-            let val = false;
-            try {
-                await instance.removeMany(query);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@removeMany: Failed - Unacknowledged');
+            const out = await instance.removeMany(query);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'deleteMany', params: {options: {}, query}}]);
         });
 
-        it('Should throw when passed valid payload but internal deleteMany returns a non-acknowledged result', async () => {
+        it('Should return false when passed valid payload but internal deleteMany returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteMany('unack');
-            let val = false;
-            try {
-                await instance.removeMany(query);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@removeMany: Failed - Unacknowledged');
+            const out = await instance.removeMany(query);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'deleteMany', params: {options: {}, query}}]);
         });
 
-        it('Should return result when passed valid payload and internal deleteMany returns valid result', async () => {
+        it('Should return true when passed valid payload and internal deleteMany returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteMany('success');
             const out = await instance.removeMany(query, {ordered: true});
-            assert.deepEqual(out, {deletedCount: 42, acknowledged: true});
+            assert.equal(out, true);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'deleteMany', params: {options: {ordered: true}, query}}]);
         });
@@ -888,68 +766,48 @@ describe('Query', () => {
             assert.deepEqual(mock_col.calls, []);
         });
 
-        it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
+        it('Should return false passed a valid payload but we fail to acquire a connection', async () => {
             const query = {date: {$gt: new Date()}};
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
-            let val = false;
-            try {
-                await instance.updateOne(query, {$inc: {count: 1}});
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@updateOne: Failed - Mongo@connect: Failed to create database instance');
+            const out = await instance.updateOne(query, {$inc: {count: 1}});
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, []);
         });
 
-        it('Should throw when passed valid payload but internal updateOne throws', async () => {
+        it('Should return false passed valid payload but internal updateOne throws', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateOne('throw');
-            let val = false;
-            try {
-                await instance.updateOne(query, {$inc: {count: 1}});
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@updateOne: Failed - MockCollection@updateOne: Oh No!');
+            const out = await instance.updateOne(query, {$inc: {count: 1}});
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'updateOne', params: {options: {}, query, data: {$inc: {count: 1}}}}]);
         });
 
-        it('Should throw when passed valid payload but internal updateOne returns a non-object result', async () => {
+        it('Should return false passed valid payload but internal updateOne returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateOne('wrongret');
-            let val = false;
-            try {
-                await instance.updateOne(query, {$inc: {count: 1}}, {upsert: true});
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@updateOne: Failed - Unacknowledged');
+            const out = await instance.updateOne(query, {$inc: {count: 1}}, {upsert: true});
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'updateOne', params: {options: {upsert: true}, query, data: {$inc: {count: 1}}}}]);
         });
 
-        it('Should throw when passed valid payload but internal updateOne returns a non-acknowledged result', async () => {
+        it('Should return false passed valid payload but internal updateOne returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateOne('unack');
-            let val = false;
-            try {
-                await instance.updateOne(query, {$inc: {count: 1}}, {upsert: false});
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@updateOne: Failed - Unacknowledged');
+            const out = await instance.updateOne(query, {$inc: {count: 1}}, {upsert: false});
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'updateOne', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
         });
 
-        it('Should return result when passed valid payload and internal updateOne returns valid result', async () => {
+        it('Should return true when passed valid payload and internal updateOne returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateOne('success');
             const out = await instance.updateOne(query, {$inc: {count: 1}}, {upsert: false});
-            assert.deepEqual(out, {matchedCount: 1, modifiedCount: 1, upsertedCount: 0, acknowledged: true});
+            assert.equal(out, true);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'updateOne', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
         });
@@ -1042,70 +900,140 @@ describe('Query', () => {
             assert.deepEqual(mock_col.calls, []);
         });
 
-        it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
+        it('Should return false passed a valid payload but we fail to acquire a connection', async () => {
             const query = {date: {$gt: new Date()}};
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
-            let val = false;
-            try {
-                await instance.updateMany(query, {$inc: {count: 1}});
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@updateMany: Failed - Mongo@connect: Failed to create database instance');
+            const out = await instance.updateMany(query, {$inc: {count: 1}});
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, []);
         });
 
-        it('Should throw when passed valid payload but internal updateMany throws', async () => {
+        it('Should return false passed valid payload but internal updateMany throws', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateMany('throw');
-            let val = false;
-            try {
-                await instance.updateMany(query, {$inc: {count: 1}});
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@updateMany: Failed - MockCollection@updateMany: Oh No!');
+            const out = await instance.updateMany(query, {$inc: {count: 1}});
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'updateMany', params: {options: {}, query, data: {$inc: {count: 1}}}}]);
         });
 
-        it('Should throw when passed valid payload but internal updateMany returns a non-object result', async () => {
+        it('Should return false passed valid payload but internal updateMany returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateMany('wrongret');
-            let val = false;
-            try {
-                await instance.updateMany(query, {$inc: {count: 1}}, {upsert: true});
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@updateMany: Failed - Unacknowledged');
+            const out = await instance.updateMany(query, {$inc: {count: 1}}, {upsert: true});
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'updateMany', params: {options: {upsert: true}, query, data: {$inc: {count: 1}}}}]);
         });
 
-        it('Should throw when passed valid payload but internal updateMany returns a non-acknowledged result', async () => {
+        it('Should return false passed valid payload but internal updateMany returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateMany('unack');
-            let val = false;
-            try {
-                await instance.updateMany(query, {$inc: {count: 1}}, {upsert: false});
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@updateMany: Failed - Unacknowledged');
+            const out = await instance.updateMany(query, {$inc: {count: 1}}, {upsert: false});
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'updateMany', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
         });
 
-        it('Should return result when passed valid payload and internal updateMany returns valid result', async () => {
+        it('Should return true when passed valid payload and internal updateMany returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateMany('success');
             const out = await instance.updateMany(query, {$inc: {count: 1}}, {upsert: false});
+            assert.equal(out, true);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(out, {matchedCount: 10, modifiedCount: 10, upsertedCount: 0, acknowledged: true});
             assert.deepEqual(mock_col.calls, [{key: 'updateMany', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
+        });
+    });
+
+    describe('insertOne', () => {
+        let instance:Query;
+
+        beforeEach(() => {
+            instance = new Query(mdb_instance, 'mycollection');
+        });
+
+        it('Should not be static', () => {
+            /* @ts-ignore */
+            assert.ok(Query.insertOne === undefined);
+        });
+
+        it('Should be an async function', () => {
+            assert.ok(Validator.rules.async_function(instance.insertOne));
+            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mock_col.calls, []);
+        });
+
+        it('Should throw when not passed a valid document', async () => {
+            for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
+                if (Array.isArray(el)) continue;
+                let val = false;
+                try {
+                    await instance.insertOne(el);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@insertOne: Document should be a non-empty object');
+                assert.deepEqual(MockClient.calls, []);
+                assert.deepEqual(mock_col.calls, []);
+            }
+        });
+
+        it('Should throw when passed options that are not an object', async () => {
+            for (const el of CONSTANTS.NOT_OBJECT) {
+                if (el === undefined) continue;
+                let val = false;
+                try {
+                    await instance.insertOne({uid: 'bla', name: 'Peter'}, el);
+                } catch (err) {
+                    val = err.message;
+                }
+                assert.equal(val, 'MongoQuery@insertOne: Options should be an object');
+                assert.deepEqual(MockClient.calls, []);
+                assert.deepEqual(mock_col.calls, []);
+            }
+        });
+
+        it('Should return null passed a valid payload but we fail to acquire a connection', async () => {
+            MockClient.setDbMode('wrongret');
+            mock_col.setColUnorderedBop('throw');
+            const out = await instance.insertOne({uid: 'bla', name: 'Peter'}, {writeConcern: {w: 'majority'}});
+            assert.equal(out, null);
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, []);
+        });
+
+        it('Should return null passed valid payload but internal insertOne throws', async () => {
+            mock_col.setColInsertOne('throw');
+            const out = await instance.insertOne({uid: 'bla', name: 'Peter'});
+            assert.equal(out, null);
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'insertOne', params: {options: {}, data: {uid: 'bla', name: 'Peter'}}}]);
+        });
+
+        it('Should return null passed valid payload but internal insertOne returns a non-object result', async () => {
+            mock_col.setColInsertOne('wrongret');
+            const out = await instance.insertOne({uid: 'bla', name: 'Peter'}, {writeConcern: {w: 'majority'}});
+            assert.equal(out, null);
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'insertOne', params: {options: {writeConcern: {w: 'majority'}}, data: {uid: 'bla', name: 'Peter'}}}]);
+        });
+
+        it('Should return null when passed valid payload but internal insertOne returns a non-acknowledged result', async () => {
+            mock_col.setColInsertOne('unack');
+            const out = await instance.insertOne({uid: 'bla', name: 'Peter'}, {writeConcern: {w: 'majority'}});
+            assert.equal(out, null);
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'insertOne', params: {options: {writeConcern: {w: 'majority'}}, data: {uid: 'bla', name: 'Peter'}}}]);
+        });
+
+        it('Should return result when passed valid payload and internal insertOne returns valid result', async () => {
+            mock_col.setColInsertOne('success');
+            const out = await instance.insertOne({uid: 'bla', name: 'Peter'});
+            assert.equal(out, 10);
+            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            assert.deepEqual(mock_col.calls, [{key: 'insertOne', params: {options: {}, data: {uid: 'bla', name: 'Peter'}}}]);
         });
     });
 
@@ -1153,74 +1081,54 @@ describe('Query', () => {
             assert.deepEqual(mock_col.calls, []);
         });
 
-        it('Should throw when passed a documents array but we fail to acquire a connection', async () => {
+        it('Should return false when passed a documents array but we fail to acquire a connection', async () => {
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
-            let val = false;
-            try {
-                await instance.insertMany([
-                    {first_name: 'Peter', last_name: 'Vermeulen'},
-                    {first_name: 'Jack', last_name: 'Bauer'},
-                ]);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@insertMany: Failed - MongoQuery@bulkOps: Failed - Mongo@connect: Failed to create database instance'); // eslint-disable-line max-len
+            const out = await instance.insertMany([
+                {first_name: 'Peter', last_name: 'Vermeulen'},
+                {first_name: 'Jack', last_name: 'Bauer'},
+            ]);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, []);
             assert.deepEqual(MockUnorderedBulkOp.calls, []);
             assert.deepEqual(MockOrderedBulkOp.calls, []);
         });
 
-        it('Should throw when passed a documents array but we fail to create a bulk operator due to it throwing', async () => {
+        it('Should return false when passed a documents array but we fail to create a bulk operator due to it throwing', async () => {
             mock_col.setColUnorderedBop('throw');
-            let val = false;
-            try {
-                await instance.insertMany([
-                    {first_name: 'Peter', last_name: 'Vermeulen'},
-                    {first_name: 'Jack', last_name: 'Bauer'},
-                ]);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@insertMany: Failed - MongoQuery@bulkOps: Failed - MockCollection@initializeUnorderedBulkOp: Oh No!'); // eslint-disable-line max-len
+            const out = await instance.insertMany([
+                {first_name: 'Peter', last_name: 'Vermeulen'},
+                {first_name: 'Jack', last_name: 'Bauer'},
+            ]);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, []);
             assert.deepEqual(MockOrderedBulkOp.calls, []);
         });
 
-        it('Should throw when passed a documents array but we fail to create a bulk operator due to it returning a bad val', async () => {
+        it('Should return false when passed a documents array but we fail to create a bulk operator due to it returning a bad val', async () => {
             mock_col.setColUnorderedBop('wrongret');
-            let val = false;
-            try {
-                await instance.insertMany([
-                    {first_name: 'Peter', last_name: 'Vermeulen'},
-                    {first_name: 'Jack', last_name: 'Bauer'},
-                ]);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@insertMany: Failed - MongoQuery@bulkOps: Failed - Not able to acquire bulk operation');
+            const out = await instance.insertMany([
+                {first_name: 'Peter', last_name: 'Vermeulen'},
+                {first_name: 'Jack', last_name: 'Bauer'},
+            ]);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, []);
             assert.deepEqual(MockOrderedBulkOp.calls, []);
         });
 
-        it('Should throw when passed a documents array but exec on bulk operator throws', async () => {
+        it('Should return false when passed a documents array but exec on bulk operator throws', async () => {
             mock_col.setColUnorderedBop('success');
             MockUnorderedBulkOp.setModeExec('throw');
-            let val = false;
-            try {
-                await instance.insertMany([
-                    {first_name: 'Peter', last_name: 'Vermeulen'},
-                    {first_name: 'Jack', last_name: 'Bauer'},
-                ]);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@insertMany: Failed - MongoQuery@bulkOps: Failed - MockUnorderedBulkOp@execute: Oh No!');
+            const out = await instance.insertMany([
+                {first_name: 'Peter', last_name: 'Vermeulen'},
+                {first_name: 'Jack', last_name: 'Bauer'},
+            ]);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, [
@@ -1232,19 +1140,14 @@ describe('Query', () => {
             assert.deepEqual(MockOrderedBulkOp.calls, []);
         });
 
-        it('Should throw when passed a document array and execute succeeds but not all documents were inserted', async () => {
+        it('Should return false when passed a document array and execute succeeds but not all documents were inserted', async () => {
             mock_col.setColUnorderedBop('success');
             MockUnorderedBulkOp.setModeExec('success');
-            let val = false;
-            try {
-                await instance.insertMany([
-                    {first_name: 'Peter', last_name: 'Vermeulen'},
-                    {first_name: 'Jack', last_name: 'Bauer'},
-                ]);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@insertMany: Failed - Not all documents were inserted');
+            const out = await instance.insertMany([
+                {first_name: 'Peter', last_name: 'Vermeulen'},
+                {first_name: 'Jack', last_name: 'Bauer'},
+            ]);
+            assert.equal(out, false);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, [
@@ -1263,7 +1166,7 @@ describe('Query', () => {
                 {first_name: 'Peter', last_name: 'Vermeulen'},
                 {first_name: 'Jack', last_name: 'Bauer'},
             ]);
-            assert.deepEqual(out, {insertedCount: 2});
+            assert.equal(out, true);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, [
@@ -1332,94 +1235,64 @@ describe('Query', () => {
             mock_col.setColUnorderedBop('throw');
             MockClient.setDbMode('wrongret');
 
-            let val = false;
-            try {
-                await instance.bulkOps(operator => operator.insert({bla: true}), false);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@bulkOps: Failed - Mongo@connect: Failed to create database instance');
+            const val = await instance.bulkOps(operator => operator.insert({bla: true}), false);
+            assert.equal(val, null);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, []);
             assert.deepEqual(MockUnorderedBulkOp.calls, []);
             assert.deepEqual(MockOrderedBulkOp.calls, []);
         });
 
-        it('Should throw when passed a valid payload but fail to acquire an unordered bulk operator due to it throwing', async () => {
+        it('Should return null when passed a valid payload but fail to acquire an unordered bulk operator due to it throwing', async () => {
             mock_col.setColUnorderedBop('throw');
 
-            let val = false;
-            try {
-                await instance.bulkOps(operator => operator.insert({bla: true}), false);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@bulkOps: Failed - MockCollection@initializeUnorderedBulkOp: Oh No!');
+            const val = await instance.bulkOps(operator => operator.insert({bla: true}), false);
+            assert.equal(val, null);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, []);
             assert.deepEqual(MockOrderedBulkOp.calls, []);
         });
 
-        it('Should throw when passed a valid payload but fail to acquire an ordered bulk operator due to it throwing', async () => {
+        it('Should return null when passed a valid payload but fail to acquire an ordered bulk operator due to it throwing', async () => {
             mock_col.setColOrderedBop('throw');
 
-            let val = false;
-            try {
-                await instance.bulkOps(operator => operator.insert({bla: true}), true);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@bulkOps: Failed - MockCollection@initializeOrderedBulkOp: Oh No!');
+            const val = await instance.bulkOps(operator => operator.insert({bla: true}), true);
+            assert.equal(val, null);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, []);
             assert.deepEqual(MockOrderedBulkOp.calls, []);
         });
 
-        it('Should throw when passed a valid payload but fail to acquire an unordered bulk operator due to returning wrong', async () => {
+        it('Should return null when passed a valid payload but fail to acquire an unordered bulk operator due to returning wrong', async () => {
             mock_col.setColUnorderedBop('wrongret');
 
-            let val = false;
-            try {
-                await instance.bulkOps(operator => operator.insert({bla: true}), false);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@bulkOps: Failed - Not able to acquire bulk operation');
+            const val = await instance.bulkOps(operator => operator.insert({bla: true}), false);
+            assert.equal(val, null);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, []);
             assert.deepEqual(MockOrderedBulkOp.calls, []);
         });
 
-        it('Should throw when passed a valid payload but fail to acquire an ordered bulk operator due to returning wrong', async () => {
+        it('Should return null when passed a valid payload but fail to acquire an ordered bulk operator due to returning wrong', async () => {
             mock_col.setColOrderedBop('wrongret');
 
-            let val = false;
-            try {
-                await instance.bulkOps(operator => operator.insert({bla: true}), true);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@bulkOps: Failed - Not able to acquire bulk operation');
+            const val = await instance.bulkOps(operator => operator.insert({bla: true}), true);
+            assert.equal(val, null);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, []);
             assert.deepEqual(MockOrderedBulkOp.calls, []);
         });
 
-        it('Should throw when passed a valid payload but fail to acquire an unordered bulk operator due to exec throw', async () => {
+        it('Should return null when passed a valid payload but fail to acquire an unordered bulk operator due to exec throw', async () => {
             mock_col.setColUnorderedBop('success');
             MockUnorderedBulkOp.setModeExec('throw');
 
-            let val = false;
-            try {
-                await instance.bulkOps(operator => operator.insert({bla: true}), false);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@bulkOps: Failed - MockUnorderedBulkOp@execute: Oh No!');
+            const val = await instance.bulkOps(operator => operator.insert({bla: true}), false);
+            assert.equal(val, null);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, [
@@ -1430,17 +1303,12 @@ describe('Query', () => {
             assert.deepEqual(MockOrderedBulkOp.calls, []);
         });
 
-        it('Should throw when passed a valid payload but fail to acquire an ordered bulk operator due to exec throw', async () => {
+        it('Should return null when passed a valid payload but fail to acquire an ordered bulk operator due to exec throw', async () => {
             mock_col.setColOrderedBop('success');
             MockOrderedBulkOp.setModeExec('throw');
 
-            let val = false;
-            try {
-                await instance.bulkOps(operator => operator.insert({bla: true}), true);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@bulkOps: Failed - MockOrderedBulkOp@execute: Oh No!');
+            const val = await instance.bulkOps(operator => operator.insert({bla: true}), true);
+            assert.equal(val, null);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, []);
@@ -1451,17 +1319,12 @@ describe('Query', () => {
             ]);
         });
 
-        it('Should throw when passed a valid payload but fail to acquire an unordered bulk operator due to exec wrong return', async () => {
+        it('Should return null when passed a valid payload but fail to acquire an unordered bulk operator due to exec wrong return', async () => {
             mock_col.setColUnorderedBop('success');
             MockUnorderedBulkOp.setModeExec('wrongret');
 
-            let val = false;
-            try {
-                await instance.bulkOps(operator => operator.insert({bla: true}), false);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@bulkOps: Failed - Unexpected result');
+            const val = await instance.bulkOps(operator => operator.insert({bla: true}), false);
+            assert.equal(val, null);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, [
@@ -1472,17 +1335,12 @@ describe('Query', () => {
             assert.deepEqual(MockOrderedBulkOp.calls, []);
         });
 
-        it('Should throw when passed a valid payload but fail to acquire an ordered bulk operator due to exec wrong return', async () => {
+        it('Should return null when passed a valid payload but fail to acquire an ordered bulk operator due to exec wrong return', async () => {
             mock_col.setColOrderedBop('success');
             MockOrderedBulkOp.setModeExec('wrongret');
 
-            let val = false;
-            try {
-                await instance.bulkOps(operator => operator.insert({bla: true}), true);
-            } catch (err) {
-                val = err.message;
-            }
-            assert.equal(val, 'MongoQuery@bulkOps: Failed - Unexpected result');
+            const val = await instance.bulkOps(operator => operator.insert({bla: true}), true);
+            assert.equal(val, null);
             assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             assert.deepEqual(mock_col.calls, [{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
             assert.deepEqual(MockUnorderedBulkOp.calls, []);

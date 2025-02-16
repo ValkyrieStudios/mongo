@@ -7,6 +7,8 @@ import {
     DeleteResult,
     Document,
     Filter,
+    InsertOneOptions,
+    InsertOneResult,
     UpdateFilter,
     UpdateOptions,
     UpdateResult,
@@ -29,7 +31,11 @@ export default class MockCollection extends Collection {
 
     #col_delete_many:MockMode = 'success';
 
+    #col_find_one:MockMode = 'success';
+
     #col_update_one:MockMode = 'success';
+
+    #col_insert_one:MockMode = 'success';
 
     #col_update_many:MockMode = 'success';
 
@@ -55,7 +61,7 @@ export default class MockCollection extends Collection {
         return {toArray: async () => this.#col_aggregate_return};
     }
 
-    async count (query: Filter<Document>, options:CountOptions):Promise<number> {
+    async countDocuments (query: Filter<Document>, options:CountOptions):Promise<number> {
         this.#calls.push({key: 'count', params: {query, options}});
 
         if (this.#col_count === 'throw') throw new Error('MockCollection@count: Oh No!');
@@ -95,6 +101,20 @@ export default class MockCollection extends Collection {
         return {deletedCount: 42, acknowledged: true};
     }
 
+    /* eslint-disable-next-line */
+    /* @ts-ignore */
+    async findOne (query:Filter<Document>, options):Promise<Document> {
+        this.#calls.push({key: 'findOne', params: {query, options}});
+
+        if (this.#col_find_one === 'throw') throw new Error('MockCollection@findOne: Oh No!');
+
+        /* eslint-disable-next-line */
+        /* @ts-ignore */
+        if (this.#col_find_one === 'wrongret') return 'hello';
+
+        return {bla: 'bla'};
+    }
+
     async updateOne (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions):Promise<UpdateResult> {
         this.#calls.push({key: 'updateOne', params: {query, data, options}});
 
@@ -107,6 +127,24 @@ export default class MockCollection extends Collection {
         if (this.#col_update_one === 'unack') return {acknowledged: false, matchedCount: 1, modifiedCount: 0, upsertedCount: 0} as UpdateResult;
 
         return {acknowledged: true, matchedCount: 1, modifiedCount: 1, upsertedCount: 0} as UpdateResult;
+    }
+
+    async insertOne (data:Document, options:InsertOneOptions):Promise<InsertOneResult> {
+        this.#calls.push({key: 'insertOne', params: {data, options}});
+
+        if (this.#col_insert_one === 'throw') throw new Error('MockCollection@insertOne: Oh No!');
+
+        /* eslint-disable-next-line */
+        /* @ts-ignore */
+        if (this.#col_insert_one === 'wrongret') return 'hello';
+
+        /* eslint-disable-next-line */
+        /* @ts-ignore */
+        if (this.#col_insert_one === 'unack') return {acknowledged: false, insertedId: 10} as InsertOneResult;
+
+        /* eslint-disable-next-line */
+        /* @ts-ignore */
+        return {acknowledged: true, insertedId: 10} as InsertOneResult;
     }
 
     async updateMany (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions):Promise<UpdateResult> {
@@ -174,6 +212,14 @@ export default class MockCollection extends Collection {
         this.#col_delete_many = mode;
     }
 
+    setColInsertOne (mode:MockMode = 'success') {
+        this.#col_insert_one = mode;
+    }
+
+    setColFindOne (mode:MockMode = 'success') {
+        this.#col_find_one = mode;
+    }
+
     setColUpdateOne (mode:MockMode = 'success') {
         this.#col_update_one = mode;
     }
@@ -196,6 +242,8 @@ export default class MockCollection extends Collection {
         this.setColCount();
         this.setColDeleteOne();
         this.setColDeleteMany();
+        this.setColInsertOne();
+        this.setColFindOne();
         this.setColUpdateOne();
         this.setColUpdateMany();
         this.setColUnorderedBop();

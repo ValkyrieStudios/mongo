@@ -18,6 +18,7 @@ import {
     type UpdateFilter,
     type UpdateOptions,
 } from 'mongodb';
+import {type LogFn, LogLevel} from './Types';
 
 type BulkOperator = OrderedBulkOperation|UnorderedBulkOperation;
 type BulkOperatorFunction = (operator:BulkOperator) => void;
@@ -30,12 +31,16 @@ class Query <TModel extends Document = Document> {
     /* Mongo collection the query is for */
     #col:string;
 
+    /* Log Function */
+    #log:LogFn;
+
     constructor (instance:Mongo, col:string) {
         if (!(instance instanceof Mongo)) throw new Error('MongoQuery: Expected instance of Mongo');
         if (!isNotEmptyString(col)) throw new Error('MongoQuery: Expected collection to be a non-empty string');
 
         this.#instance  = instance;
         this.#col       = col;
+        this.#log       = instance.log;
     }
 
     /**

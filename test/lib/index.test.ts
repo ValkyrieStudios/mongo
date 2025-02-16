@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable max-lines */
 
 import Validator                                from '@valkyriestudios/validator';
@@ -80,14 +81,17 @@ const FULL_VALID_URI_CONNECT_EXPECTED_PAYLOAD = {
 
 describe('Index', () => {
     const mockConsoleInfo = new MockFn();
+    const mockConsoleError = new MockFn();
 
     beforeEach(() => {
         mockConsoleInfo.mock(console, 'info');
+        mockConsoleError.mock(console, 'error');
         MockClient.mock();
     });
 
     afterEach(() => {
         mockConsoleInfo.restore();
+        mockConsoleError.restore();
         MockClient.restore();
     });
 
@@ -98,8 +102,9 @@ describe('Index', () => {
                 () => new DBMongo(),
                 new Error('Mongo@ctor: options should be an object')
             );
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should throw when not passed an object or provided with an empty object', () => {
@@ -110,14 +115,15 @@ describe('Index', () => {
                     new Error('Mongo@ctor: options should be an object')
                 );
             }
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should not throw when provided with valid options', () => {
             assert.doesNotThrow(() => new DBMongo(FULL_VALID_OPTS));
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
         });
 
         describe('hostConnection', () => {
@@ -130,28 +136,31 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed and not log by default', () => {
                     const opts:any = {...FULL_VALID_OPTS};
                     delete opts.debug;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not log if debug is passed as false', () => {
                     assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, ...{debug: false}}));
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should log if debug is enabled', () => {
                     assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, ...{debug: true}}));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -164,8 +173,9 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when passed as a number above 100', () => {
@@ -176,8 +186,9 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when passed as a number below 1', () => {
@@ -188,16 +199,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_OPTS};
                     delete opts.pool_size;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -210,16 +222,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_OPTS};
                     delete opts.host;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -232,8 +245,9 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when not passed', () => {
@@ -243,8 +257,9 @@ describe('Index', () => {
                         () => new DBMongo(opts),
                         new Error('Mongo@ctor: options are invalid')
                     );
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -257,8 +272,9 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when not passed', () => {
@@ -268,8 +284,9 @@ describe('Index', () => {
                         () => new DBMongo(opts),
                         new Error('Mongo@ctor: options are invalid')
                     );
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -282,8 +299,9 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when not passed', () => {
@@ -293,8 +311,9 @@ describe('Index', () => {
                         () => new DBMongo(opts),
                         new Error('Mongo@ctor: options are invalid')
                     );
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -307,16 +326,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_OPTS};
                     delete opts.auth_db;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -336,16 +356,17 @@ describe('Index', () => {
                         () => new DBMongo({...FULL_VALID_OPTS, ...{replset: true}}),
                         new Error('Mongo@ctor: options are invalid')
                     );
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_OPTS};
                     delete opts.replset;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -358,8 +379,9 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when passed as a random string that is not in the set of options', () => {
@@ -370,15 +392,16 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when passed as a valid ReadPreference', () => {
                     for (const el of Object.values(Protocols)) {
                         assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, protocol: el}));
-                        assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                        assert.deepEqual(MockClient.calls, []);
+                        assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                        assert.ok(MockClient.isEmpty);
                         mockConsoleInfo.reset();
                     }
                 });
@@ -387,8 +410,8 @@ describe('Index', () => {
                     const opts:any = {...FULL_VALID_OPTS};
                     delete opts.protocol;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -401,8 +424,9 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when passed as a random string that is not in the set of options', () => {
@@ -413,15 +437,16 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when passed as a valid ReadPreference', () => {
                     for (const el of Object.values(ReadPreferences)) {
                         assert.doesNotThrow(() => new DBMongo({...FULL_VALID_OPTS, read_preference: el}));
-                        assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                        assert.deepEqual(MockClient.calls, []);
+                        assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                        assert.ok(MockClient.isEmpty);
                         mockConsoleInfo.reset();
                     }
                 });
@@ -430,8 +455,8 @@ describe('Index', () => {
                     const opts:any = {...FULL_VALID_OPTS};
                     delete opts.read_preference;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -444,16 +469,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_OPTS};
                     delete opts.retry_reads;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -466,16 +492,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_OPTS};
                     delete opts.retry_writes;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -488,16 +515,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_OPTS};
                     delete opts.retry_writes;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -510,16 +538,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_OPTS};
                     delete opts.retry_writes;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
         });
@@ -534,28 +563,31 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed and not log by default', () => {
                     const opts:any = {...FULL_VALID_URI_OPTS};
                     delete opts.debug;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not log if debug is passed as false', () => {
                     assert.doesNotThrow(() => new DBMongo({...FULL_VALID_URI_OPTS, ...{debug: false}}));
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should log if debug is enabled', () => {
                     assert.doesNotThrow(() => new DBMongo({...FULL_VALID_URI_OPTS, ...{debug: true}}));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -568,8 +600,9 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when passed as a number above 100', () => {
@@ -580,8 +613,9 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when passed as a number below 1', () => {
@@ -592,16 +626,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_URI_OPTS};
                     delete opts.pool_size;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -613,8 +648,9 @@ describe('Index', () => {
                             () => new DBMongo({...FULL_VALID_URI_OPTS, uri: el})
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when passed as an invalid uri', () => {
@@ -696,8 +732,9 @@ describe('Index', () => {
                             () => new DBMongo({...FULL_VALID_URI_OPTS, uri: URI_WITHOUT_DB, ...{db: el}})
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when not passed when uri does not contain db', () => {
@@ -707,29 +744,30 @@ describe('Index', () => {
                         () => new DBMongo(opts),
                         new Error('Mongo@ctor: db not in uri and not provided in config')
                     );
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed when uri does contain db', () => {
                     const opts:any = {...FULL_VALID_URI_OPTS};
                     delete opts.db;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when passed when uri does not contain db', () => {
                     const opts:any = {...FULL_VALID_URI_OPTS, uri: URI_WITHOUT_DB, db: 'hello'};
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
                 it('Should not throw when passed when uri does contain db', () => {
                     const opts:any = {...FULL_VALID_URI_OPTS, db: 'hello'};
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -742,8 +780,9 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should throw when passed as a random string that is not in the set of options', () => {
@@ -754,15 +793,16 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when passed as a valid ReadPreference', () => {
                     for (const el of Object.values(ReadPreferences)) {
                         assert.doesNotThrow(() => new DBMongo({...FULL_VALID_URI_OPTS, read_preference: el}));
-                        assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                        assert.deepEqual(MockClient.calls, []);
+                        assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                        assert.ok(MockClient.isEmpty);
                         mockConsoleInfo.reset();
                     }
                 });
@@ -771,8 +811,8 @@ describe('Index', () => {
                     const opts:any = {...FULL_VALID_URI_OPTS};
                     delete opts.read_preference;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -785,16 +825,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_URI_OPTS};
                     delete opts.retry_reads;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -807,16 +848,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_URI_OPTS};
                     delete opts.retry_writes;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -829,16 +871,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_URI_OPTS};
                     delete opts.retry_writes;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
 
@@ -851,16 +894,17 @@ describe('Index', () => {
                             new Error('Mongo@ctor: options are invalid')
                         );
                     }
-                    assert.deepEqual(mockConsoleInfo.calls, []);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.ok(mockConsoleInfo.isEmpty);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 });
 
                 it('Should not throw when not passed', () => {
                     const opts:any = {...FULL_VALID_URI_OPTS};
                     delete opts.retry_writes;
                     assert.doesNotThrow(() => new DBMongo(opts));
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(MockClient.isEmpty);
                 });
             });
         });
@@ -870,8 +914,9 @@ describe('Index', () => {
         it('Should exist', () => {
             const instance = new DBMongo({user: 'peter', pass: 'mysecretpassword', db: 'main'});
             assert.equal(instance.uid, 'mongodb:2036634067');
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be a getter', () => {
@@ -880,16 +925,18 @@ describe('Index', () => {
             /* @ts-ignore */
             instance.uid = 'bla';
             assert.equal(instance.uid, 'mongodb:1156494214');
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be the same every time', () => {
             for (let i = 0; i < 1000; i++) {
                 const instance = new DBMongo({user: 'peter', pass: 'mysecretpassword', db: 'main'});
                 assert.equal(instance.uid, 'mongodb:2036634067');
-                assert.deepEqual(mockConsoleInfo.calls, []);
-                assert.deepEqual(MockClient.calls, []);
+                assert.ok(mockConsoleInfo.isEmpty);
+                assert.ok(mockConsoleError.isEmpty);
+                assert.ok(MockClient.isEmpty);
                 mockConsoleInfo.reset();
             }
         });
@@ -898,8 +945,9 @@ describe('Index', () => {
             const instance = new DBMongo({user: 'peter', pass: 'mysecretpassword', db: 'main'});
             const instance2 = new DBMongo({user: 'peter', pass: 'mysecretpassword', db: 'main'});
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be different if host differs', () => {
@@ -907,8 +955,9 @@ describe('Index', () => {
             const instance2 = new DBMongo({host: '127.0.0.1:8082', user: 'peter', pass: 'thisistrulysecret', db: 'main'});
             assert.equal(instance.uid, 'mongodb:355260832');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be different if user differs', () => {
@@ -916,8 +965,9 @@ describe('Index', () => {
             const instance2 = new DBMongo({host: '127.0.0.1:8082', user: 'jake', pass: 'thisistrulysecret', db: 'main'});
             assert.equal(instance.uid, 'mongodb:669723387');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be different if pass differs', () => {
@@ -925,8 +975,9 @@ describe('Index', () => {
             const instance2 = new DBMongo({host: '127.0.0.1:8082', user: 'admin', pass: 'rot', db: 'main'});
             assert.equal(instance.uid, 'mongodb:2773005600');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be different if auth_db differs', () => {
@@ -934,8 +985,9 @@ describe('Index', () => {
             const instance2 = new DBMongo({host: '127.0.0.1:8082', user: 'admin', pass: 'root', auth_db: 'someother', db: 'main'});
             assert.equal(instance.uid, 'mongodb:2773005600');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be different if db differs', () => {
@@ -943,8 +995,9 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'identity'});
             assert.equal(instance.uid, 'mongodb:2283077747');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be different if protocol differs', () => {
@@ -952,8 +1005,9 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'main', protocol: 'mongodb'});
             assert.equal(instance.uid, 'mongodb:703732625');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be different if the replset differs', () => {
@@ -961,8 +1015,9 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', replset: 'cluster2', db: 'main'});
             assert.equal(instance.uid, 'mongodb:1638644854');
             assert.notEqual(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be the same if debug differs but the rest is the same', () => {
@@ -970,8 +1025,8 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'main', debug: true});
             assert.equal(instance.uid, 'mongodb:2283077747');
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be the same if pool_size differs but the rest is the same', () => {
@@ -979,8 +1034,9 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'main', pool_size: 25});
             assert.equal(instance.uid, 'mongodb:2283077747');
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be the same if read_preference differs but the rest is the same', () => {
@@ -988,8 +1044,9 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'main', read_preference: 'primary'});
             assert.equal(instance.uid, 'mongodb:2283077747');
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be the same if retry_reads differs but the rest is the same', () => {
@@ -997,8 +1054,9 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'main', retry_reads: false});
             assert.equal(instance.uid, 'mongodb:2283077747');
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be the same if retry_writes differs but the rest is the same', () => {
@@ -1006,8 +1064,9 @@ describe('Index', () => {
             const instance2 = new DBMongo({user: 'admin', pass: 'root', db: 'main', retry_writes: false});
             assert.equal(instance.uid, 'mongodb:2283077747');
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be the same if all of debug,pool_size,read_preference,retry_reads,retry_writes differs but the rest is the same', () => {
@@ -1039,8 +1098,8 @@ describe('Index', () => {
             });
             assert.equal(instance.uid, 'mongodb:595584381');
             assert.equal(instance.uid, instance2.uid);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
         });
     });
 
@@ -1050,8 +1109,9 @@ describe('Index', () => {
             //  @ts-ignore
             app.isDebugEnabled = 'bla';
             assert.equal(app.isConnected, false);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should by default be false', () => {
@@ -1071,10 +1131,11 @@ describe('Index', () => {
             assert.equal(val, 'MockClient@connect: Oh No!');
             assert.equal(app.isConnected, false);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Failed to connect', {err: 'MockClient@connect: Oh No!'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@connect: Failed to connect');
             assert.deepEqual(MockClient.calls.length, 1);
         });
 
@@ -1090,10 +1151,11 @@ describe('Index', () => {
             assert.equal(val, 'Mongo@connect: Failed to create client pool');
             assert.equal(app.isConnected, false);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Failed to connect', {err: 'Mongo@connect: Failed to create client pool'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@connect: Failed to connect');
             assert.deepEqual(MockClient.calls.length, 1);
         });
 
@@ -1114,7 +1176,8 @@ describe('Index', () => {
             MockClient.setConnectMode('success');
             MockClient.setDbMode('success');
             await app.connect();
-            assert.deepEqual(mockConsoleInfo.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
             assert.deepEqual(MockClient.calls.length, 2);
             assert.deepEqual(MockClient.calls, [
                 {key: 'connect', params: {
@@ -1147,29 +1210,32 @@ describe('Index', () => {
             //  @ts-ignore
             app.isDebugEnabled = 'bla';
             assert.equal(app.isDebugEnabled, false);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should by default be false', () => {
             const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main'});
             assert.equal(app.isDebugEnabled, false);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should return the proper value when debug is configured as true via ctor', () => {
             const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main', debug: true});
             assert.equal(app.isDebugEnabled, true);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should return the proper value when debug is configured as false via ctor, and not log', () => {
             const app = new DBMongo({user: 'peter', pass: 'mysecret', db: 'main', debug: false});
             assert.equal(app.isDebugEnabled, false);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
     });
 
@@ -1177,15 +1243,17 @@ describe('Index', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(DBMongo.bootstrap === undefined);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             assert.ok(Validator.rules.async_function(instance.bootstrap));
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should throw when connect fails', async () => {
@@ -1204,11 +1272,12 @@ describe('Index', () => {
 
             assert.equal(val, 'Oh No');
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@bootstrap: ------ Connectivity check'],
-                ['Mongo@bootstrap: ------ Connectivity failure'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@bootstrap: Connectivity check'],
             ]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@bootstrap: Connectivity failure');
+            assert.ok(MockClient.isEmpty);
 
             mockConnect.restore();
         });
@@ -1231,12 +1300,13 @@ describe('Index', () => {
 
             assert.equal(val, 'Oh No');
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@bootstrap: ------ Connectivity check'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@bootstrap: ------ Connectivity failure'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@bootstrap: Connectivity check'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@bootstrap: Connectivity failure');
             assert.deepEqual(MockClient.calls, [
                 {key: 'connect', params: FULL_VALID_CONNECT_EXPECTED_PAYLOAD},
                 {key: 'db', params: {name: 'main', opts: {readPreference: 'nearest', retryWrites: true}}},
@@ -1252,14 +1322,15 @@ describe('Index', () => {
             MockClient.setCloseMode('success');
             await instance.bootstrap();
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@bootstrap: ------ Connectivity check'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@close: Closing connection'],
-                ['Mongo@close: Connection terminated'],
-                ['Mongo@bootstrap: ------ Connectivity success'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@bootstrap: Connectivity check'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@close: Closing connection'],
+                ['[info] Mongo@close: Connection Terminated'],
+                ['[info] Mongo@bootstrap: Connectivity success'],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
             assert.deepEqual(MockClient.calls, [
                 {key: 'connect', params: FULL_VALID_CONNECT_EXPECTED_PAYLOAD},
                 {key: 'db', params: {name: 'main', opts: {readPreference: 'nearest', retryWrites: true}}},
@@ -1274,14 +1345,15 @@ describe('Index', () => {
             MockClient.setCloseMode('success');
             await instance.bootstrap();
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@bootstrap: ------ Connectivity check'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@close: Closing connection'],
-                ['Mongo@close: Connection terminated'],
-                ['Mongo@bootstrap: ------ Connectivity success'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@bootstrap: Connectivity check'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@close: Closing connection'],
+                ['[info] Mongo@close: Connection Terminated'],
+                ['[info] Mongo@bootstrap: Connectivity success'],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
             assert.deepEqual(MockClient.calls, [
                 {key: 'connect', params: FULL_VALID_URI_CONNECT_EXPECTED_PAYLOAD},
                 {key: 'db', params: {name: 'main', opts: {readPreference: 'nearest', retryWrites: false}}},
@@ -1300,8 +1372,9 @@ describe('Index', () => {
                         val = err.message;
                     }
                     assert.equal(val, 'Mongo@bootstrap: All collection objects need to be valid');
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 }
             });
 
@@ -1315,8 +1388,9 @@ describe('Index', () => {
                         val = err.message;
                     }
                     assert.equal(val, 'Mongo@bootstrap: All collection objects need to be valid');
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 }
             });
 
@@ -1330,8 +1404,9 @@ describe('Index', () => {
                         val = err.message;
                     }
                     assert.equal(val, 'Mongo@bootstrap: All collection objects need to be valid');
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 }
             });
 
@@ -1345,8 +1420,9 @@ describe('Index', () => {
                         val = err.message;
                     }
                     assert.equal(val, 'Mongo@bootstrap: All collection objects need to be valid');
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 }
             });
 
@@ -1360,8 +1436,9 @@ describe('Index', () => {
                         val = err.message;
                     }
                     assert.equal(val, 'Mongo@bootstrap: All collection objects need to be valid');
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 }
             });
 
@@ -1378,8 +1455,9 @@ describe('Index', () => {
                         val = err.message;
                     }
                     assert.equal(val, 'Mongo@bootstrap: All collection objects need to be valid');
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 }
             });
 
@@ -1397,8 +1475,9 @@ describe('Index', () => {
                         val = err.message;
                     }
                     assert.equal(val, 'Mongo@bootstrap: All collection objects need to be valid');
-                    assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                    assert.deepEqual(MockClient.calls, []);
+                    assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                    assert.ok(mockConsoleError.isEmpty);
+                    assert.ok(MockClient.isEmpty);
                 }
             });
 
@@ -1417,8 +1496,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@bootstrap: Ensure all indexes have a unique name');
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-                assert.deepEqual(MockClient.calls, []);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
+                assert.ok(MockClient.isEmpty);
             });
 
             it('Should create structure', async () => {
@@ -1451,34 +1531,44 @@ describe('Index', () => {
                     },
                 ]);
                 assert.deepEqual(mockConsoleInfo.calls, [
-                    ['Mongo: Instantiated'],
-                    ['Mongo@bootstrap: ------ Connectivity check'],
-                    ['Mongo@connect: Establishing connection'],
-                    ['Mongo@connect: Connection established'],
-                    ['Mongo@bootstrap: ------ Ensuring structure'],
-                    ['Mongo@hasCollection: collection_1 - does not exist'],
-                    ['Mongo@createCollection: Creating collection - collection_1'],
-                    ['Mongo@hasCollection: collection_2 - does not exist'],
-                    ['Mongo@createCollection: Creating collection - collection_2'],
-                    ['Mongo@hasIndex: collection_2 ix:uid_asc - does not exist'],
-                    ['Mongo@createIndex: Creating index uid_asc on collection_2'],
-                    ['Mongo@hasCollection: collection_3 - does not exist'],
-                    ['Mongo@createCollection: Creating collection - collection_3'],
-                    ['Mongo@hasIndex: collection_3 ix:uid_asc - does not exist'],
-                    ['Mongo@createIndex: Creating index uid_asc on collection_3'],
-                    ['Mongo@hasIndex: collection_3 ix:uid_asc_date_desc - does not exist'],
-                    ['Mongo@createIndex: Creating index uid_asc_date_desc on collection_3'],
-                    ['Mongo@hasCollection: collection_4 - does not exist'],
-                    ['Mongo@createCollection: Creating collection - collection_4'],
-                    ['Mongo@hasIndex: collection_4 ix:uid_asc - does not exist'],
-                    ['Mongo@createIndex: Creating index uid_asc on collection_4'],
-                    ['Mongo@hasIndex: collection_4 ix:uid_asc_date_desc - does not exist'],
-                    ['Mongo@createIndex: Creating index uid_asc_date_desc on collection_4'],
-                    ['Mongo@bootstrap: ------ Structure ensured'],
-                    ['Mongo@close: Closing connection'],
-                    ['Mongo@close: Connection terminated'],
-                    ['Mongo@bootstrap: ------ Connectivity success'],
+                    ['[info] Mongo@ctor: Instantiated'],
+                    ['[info] Mongo@bootstrap: Connectivity check'],
+                    ['[info] Mongo@connect: Establishing connection'],
+                    ['[info] Mongo@connect: Connection established'],
+                    ['[info] Mongo@bootstrap: Ensuring structure'],
+                    ['[info] Mongo@hasCollection: Collection does not exist', {collection: 'collection_1'}],
+                    ['[info] Mongo@createCollection: Creating collection', {collection: 'collection_1'}],
+                    ['[info] Mongo@createCollection: Collection created', {collection: 'collection_1'}],
+                    ['[info] Mongo@hasCollection: Collection does not exist', {collection: 'collection_2'}],
+                    ['[info] Mongo@createCollection: Creating collection', {collection: 'collection_2'}],
+                    ['[info] Mongo@createCollection: Collection created', {collection: 'collection_2'}],
+                    ['[info] Mongo@hasIndex: Index does not exist', {collection: 'collection_2', name: 'uid_asc'}],
+                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_2', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
+                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_2', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
+                    ['[info] Mongo@hasCollection: Collection does not exist', {collection: 'collection_3'}],
+                    ['[info] Mongo@createCollection: Creating collection', {collection: 'collection_3'}],
+                    ['[info] Mongo@createCollection: Collection created', {collection: 'collection_3'}],
+                    ['[info] Mongo@hasIndex: Index does not exist', {collection: 'collection_3', name: 'uid_asc'}],
+                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_3', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
+                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_3', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
+                    ['[info] Mongo@hasIndex: Index does not exist', {collection: 'collection_3', name: 'uid_asc_date_desc'}],
+                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_3', name: 'uid_asc_date_desc', options: {background: true}, spec: {uid: 1, date: -1}}],
+                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_3', name: 'uid_asc_date_desc', options: {background: true}, spec: {uid: 1, date: -1}}],
+                    ['[info] Mongo@hasCollection: Collection does not exist', {collection: 'collection_4'}],
+                    ['[info] Mongo@createCollection: Creating collection', {collection: 'collection_4'}],
+                    ['[info] Mongo@createCollection: Collection created', {collection: 'collection_4'}],
+                    ['[info] Mongo@hasIndex: Index does not exist', {collection: 'collection_4', name: 'uid_asc'}],
+                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_4', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
+                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_4', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
+                    ['[info] Mongo@hasIndex: Index does not exist', {collection: 'collection_4', name: 'uid_asc_date_desc'}],
+                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_4', name: 'uid_asc_date_desc', options: {background: true, expireAfterSeconds: 90}, spec: {uid: 1, date: -1}}],
+                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_4', name: 'uid_asc_date_desc', options: {background: true, expireAfterSeconds: 90}, spec: {uid: 1, date: -1}}],
+                    ['[info] Mongo@bootstrap: Structure ensured'],
+                    ['[info] Mongo@close: Closing connection'],
+                    ['[info] Mongo@close: Connection Terminated'],
+                    ['[info] Mongo@bootstrap: Connectivity success'],
                 ]);
+                assert.ok(mockConsoleError.isEmpty);
                 assert.deepEqual(MockClient.calls, [
                     {key: 'connect', params: FULL_VALID_CONNECT_EXPECTED_PAYLOAD},
                     {key: 'db', params: {name: 'main', opts: {readPreference: 'nearest', retryWrites: true}}},
@@ -1633,24 +1723,24 @@ describe('Index', () => {
                     },
                 ]);
                 assert.deepEqual(mockConsoleInfo.calls, [
-                    ['Mongo: Instantiated'],
-                    ['Mongo@bootstrap: ------ Connectivity check'],
-                    ['Mongo@connect: Establishing connection'],
-                    ['Mongo@connect: Connection established'],
-                    ['Mongo@bootstrap: ------ Ensuring structure'],
-                    ['Mongo@hasCollection: collection_1 - exists'],
-                    ['Mongo@hasCollection: collection_2 - exists'],
-                    ['Mongo@hasIndex: collection_2 ix:uid_asc - exists'],
-                    ['Mongo@hasCollection: collection_3 - exists'],
-                    ['Mongo@hasIndex: collection_3 ix:uid_asc - exists'],
-                    ['Mongo@hasIndex: collection_3 ix:uid_asc_date_desc - exists'],
-                    ['Mongo@hasCollection: collection_4 - exists'],
-                    ['Mongo@hasIndex: collection_4 ix:uid_asc - exists'],
-                    ['Mongo@hasIndex: collection_4 ix:uid_asc_date_desc - exists'],
-                    ['Mongo@bootstrap: ------ Structure ensured'],
-                    ['Mongo@close: Closing connection'],
-                    ['Mongo@close: Connection terminated'],
-                    ['Mongo@bootstrap: ------ Connectivity success'],
+                    ['[info] Mongo@ctor: Instantiated'],
+                    ['[info] Mongo@bootstrap: Connectivity check'],
+                    ['[info] Mongo@connect: Establishing connection'],
+                    ['[info] Mongo@connect: Connection established'],
+                    ['[info] Mongo@bootstrap: Ensuring structure'],
+                    ['[info] Mongo@hasCollection: Collection exists', {collection: 'collection_1'}],
+                    ['[info] Mongo@hasCollection: Collection exists', {collection: 'collection_2'}],
+                    ['[info] Mongo@hasIndex: Index exists', {collection: 'collection_2', name: 'uid_asc'}],
+                    ['[info] Mongo@hasCollection: Collection exists', {collection: 'collection_3'}],
+                    ['[info] Mongo@hasIndex: Index exists', {collection: 'collection_3', name: 'uid_asc'}],
+                    ['[info] Mongo@hasIndex: Index exists', {collection: 'collection_3', name: 'uid_asc_date_desc'}],
+                    ['[info] Mongo@hasCollection: Collection exists', {collection: 'collection_4'}],
+                    ['[info] Mongo@hasIndex: Index exists', {collection: 'collection_4', name: 'uid_asc'}],
+                    ['[info] Mongo@hasIndex: Index exists', {collection: 'collection_4', name: 'uid_asc_date_desc'}],
+                    ['[info] Mongo@bootstrap: Structure ensured'],
+                    ['[info] Mongo@close: Closing connection'],
+                    ['[info] Mongo@close: Connection Terminated'],
+                    ['[info] Mongo@bootstrap: Connectivity success'],
                 ]);
                 assert.deepEqual(MockClient.calls, [
                     {key: 'connect', params: FULL_VALID_CONNECT_EXPECTED_PAYLOAD},
@@ -1723,15 +1813,16 @@ describe('Index', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(DBMongo.connect === undefined);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             assert.ok(Validator.rules.async_function(instance.connect));
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should throw if connect fails due to mongo internals throwing', async () => {
@@ -1745,10 +1836,11 @@ describe('Index', () => {
             }
             assert.equal(val, 'MockClient@connect: Oh No!');
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Failed to connect', {err: 'MockClient@connect: Oh No!'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@connect: Failed to connect');
             assert.deepEqual(MockClient.calls.length, 1);
         });
 
@@ -1763,10 +1855,11 @@ describe('Index', () => {
             }
             assert.equal(val, 'Mongo@connect: Failed to create client pool');
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Failed to connect', {err: 'Mongo@connect: Failed to create client pool'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@connect: Failed to connect');
             assert.deepEqual(MockClient.calls.length, 1);
         });
 
@@ -1782,10 +1875,11 @@ describe('Index', () => {
             }
             assert.equal(val, 'MockClient@db: Oh No!');
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Failed to connect', {err: 'MockClient@db: Oh No!'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@connect: Failed to connect');
             assert.deepEqual(MockClient.calls.length, 2);
         });
 
@@ -1800,7 +1894,8 @@ describe('Index', () => {
                 val = err.message;
             }
             assert.equal(val, 'Mongo@connect: Failed to create database instance');
-            assert.deepEqual(mockConsoleInfo.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
             assert.deepEqual(MockClient.calls.length, 2);
         });
 
@@ -1810,7 +1905,8 @@ describe('Index', () => {
             MockClient.setDbMode('success');
             const db = await app.connect();
             assert.ok(db instanceof Db);
-            assert.deepEqual(mockConsoleInfo.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
             assert.deepEqual(MockClient.calls.length, 2);
             assert.deepEqual(MockClient.calls, [
                 {key: 'connect', params: {
@@ -1854,7 +1950,8 @@ describe('Index', () => {
             MockClient.setDbMode('success');
             const db = await app.connect();
             assert.ok(db instanceof Db);
-            assert.deepEqual(mockConsoleInfo.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
             assert.deepEqual(MockClient.calls.length, 2);
             assert.deepEqual(MockClient.calls, [
                 {key: 'connect', params: {
@@ -1899,7 +1996,8 @@ describe('Index', () => {
             let db;
             for (let i = 0; i < 100; i++) db = await app.connect();
             assert.ok(db instanceof Db);
-            assert.deepEqual(mockConsoleInfo.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
             assert.deepEqual(MockClient.calls.length, 2);
             assert.deepEqual(MockClient.calls, [
                 {key: 'connect', params: {
@@ -1929,15 +2027,17 @@ describe('Index', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(DBMongo.hasCollection === undefined);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             assert.ok(Validator.rules.async_function(instance.hasCollection));
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if not passed a string or passed an empty string collection name', async () => {
@@ -1950,8 +2050,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@hasCollection: Collection should be a non-empty string');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -1978,10 +2079,11 @@ describe('Index', () => {
                 }},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Failed to connect', {err: 'MockClient@db: Oh No!'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@connect: Failed to connect');
         });
 
         it('Should throw if passed valid payload but connect does not return DB instance', async () => {
@@ -1997,7 +2099,8 @@ describe('Index', () => {
                 val = err.message;
             }
             assert.equal(val, 'Mongo@hasCollection: Failed to connect');
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(mockConsoleError.isEmpty);
             mockConnect.restore();
         });
 
@@ -2014,7 +2117,8 @@ describe('Index', () => {
                 val = err.message;
             }
             assert.equal(val, 'Mongo@hasCollection: Failed to connect');
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(mockConsoleError.isEmpty);
             mockConnect.restore();
         });
 
@@ -2045,10 +2149,11 @@ describe('Index', () => {
                 {key: 'listCollections', params: {opts: {name: 'mycollection'}}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if passed valid payload and connecting, but listCollections returns a wrong value', async () => {
@@ -2078,10 +2183,11 @@ describe('Index', () => {
                 {key: 'listCollections', params: {opts: {name: 'mycollection'}}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should return false if valid payload, connecting, but listCollections returns an empty set', async () => {
@@ -2106,11 +2212,12 @@ describe('Index', () => {
                 {key: 'listCollections', params: {opts: {name: 'mycollection'}}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@hasCollection: mycollection - does not exist'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@hasCollection: Collection does not exist', {collection: 'mycollection'}],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should return true if valid payload, connecting, and hasCollection returns true', async () => {
@@ -2135,11 +2242,12 @@ describe('Index', () => {
                 {key: 'listCollections', params: {opts: {name: 'mycollection'}}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@hasCollection: mycollection - exists'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@hasCollection: Collection exists', {collection: 'mycollection'}],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should return true if valid payload, connecting and hasCollection returns true and not log if debug is off', async () => {
@@ -2163,7 +2271,8 @@ describe('Index', () => {
             assert.deepEqual(MockDb.calls, [
                 {key: 'listCollections', params: {opts: {name: 'mycollection'}}},
             ]);
-            assert.deepEqual(mockConsoleInfo.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
         });
     });
 
@@ -2171,15 +2280,17 @@ describe('Index', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(DBMongo.createCollection === undefined);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             assert.ok(Validator.rules.async_function(instance.createCollection));
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if not passed a string or passed an empty string collection name', async () => {
@@ -2192,8 +2303,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@createCollection: Collection should be a non-empty string');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -2220,10 +2332,11 @@ describe('Index', () => {
                 }},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Failed to connect', {err: 'MockClient@db: Oh No!'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@connect: Failed to connect');
         });
 
         it('Should throw if passed valid payload but connect does not return DB instance', async () => {
@@ -2239,7 +2352,8 @@ describe('Index', () => {
                 val = err.message;
             }
             assert.equal(val, 'Mongo@createCollection: Failed to connect');
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(mockConsoleError.isEmpty);
             mockConnect.restore();
         });
 
@@ -2270,11 +2384,12 @@ describe('Index', () => {
                 {key: 'createCollection', params: {name: 'mycollection'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@createCollection: Creating collection - mycollection'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@createCollection: Creating collection', {collection: 'mycollection'}],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should not throw and return false if passed valid payload and connecting, but createCollection fails', async () => {
@@ -2299,11 +2414,13 @@ describe('Index', () => {
                 {key: 'createCollection', params: {name: 'mycollection'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@createCollection: Creating collection - mycollection'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@createCollection: Creating collection', {collection: 'mycollection'}],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@createCollection: Did not create collection');
         });
 
         it('Should not throw and return true if passed valid payload and connecting, and createCollection succeeds', async () => {
@@ -2328,10 +2445,11 @@ describe('Index', () => {
                 {key: 'createCollection', params: {name: 'foobar'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@createCollection: Creating collection - foobar'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@createCollection: Creating collection', {collection: 'foobar'}],
+                ['[info] Mongo@createCollection: Collection created', {collection: 'foobar'}],
             ]);
         });
     });
@@ -2340,15 +2458,17 @@ describe('Index', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(DBMongo.dropCollection === undefined);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             assert.ok(Validator.rules.async_function(instance.dropCollection));
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if not passed a string or passed an empty string collection name', async () => {
@@ -2361,8 +2481,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@dropCollection: Collection should be a non-empty string');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -2389,10 +2510,11 @@ describe('Index', () => {
                 }},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Failed to connect', {err: 'MockClient@db: Oh No!'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@connect: Failed to connect');
         });
 
         it('Should throw if passed valid payload but connect does not return DB instance', async () => {
@@ -2408,7 +2530,8 @@ describe('Index', () => {
                 val = err.message;
             }
             assert.equal(val, 'Mongo@dropCollection: Failed to connect');
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(mockConsoleError.isEmpty);
             mockConnect.restore();
         });
 
@@ -2439,11 +2562,12 @@ describe('Index', () => {
                 {key: 'dropCollection', params: {name: 'mycollection'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@dropCollection: Dropping collection - mycollection'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[warn] Mongo@dropCollection: Dropping collection', {collection: 'mycollection'}],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should not throw and return false if passed valid payload and connecting, but dropCollection fails', async () => {
@@ -2468,11 +2592,13 @@ describe('Index', () => {
                 {key: 'dropCollection', params: {name: 'mycollection'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@dropCollection: Dropping collection - mycollection'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[warn] Mongo@dropCollection: Dropping collection', {collection: 'mycollection'}],
+                ['[warn] Mongo@dropCollection: Did not drop collection', {collection: 'mycollection'}],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should not throw and return true if passed valid payload and connecting, and dropCollection succeeds', async () => {
@@ -2497,11 +2623,13 @@ describe('Index', () => {
                 {key: 'dropCollection', params: {name: 'foobar'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@dropCollection: Dropping collection - foobar'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[warn] Mongo@dropCollection: Dropping collection', {collection: 'foobar'}],
+                ['[warn] Mongo@dropCollection: Collection dropped', {collection: 'foobar'}],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
     });
 
@@ -2509,15 +2637,17 @@ describe('Index', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(DBMongo.hasIndex === undefined);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             assert.ok(Validator.rules.async_function(instance.hasIndex));
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if not passed a string or passed an empty string collection name', async () => {
@@ -2530,8 +2660,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@hasIndex: Collection should be a non-empty string');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -2545,8 +2676,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@hasIndex: Index Name should be a non-empty string');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -2573,10 +2705,11 @@ describe('Index', () => {
                 }},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Failed to connect', {err: 'MockClient@db: Oh No!'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@connect: Failed to connect');
         });
 
         it('Should throw if passed valid payload but connect does not return DB instance', async () => {
@@ -2592,7 +2725,8 @@ describe('Index', () => {
                 val = err.message;
             }
             assert.equal(val, 'Mongo@hasIndex: Failed to connect');
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(mockConsoleError.isEmpty);
             mockConnect.restore();
         });
 
@@ -2623,10 +2757,11 @@ describe('Index', () => {
                 {key: 'collection', params: {name: 'mycollection'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if passed valid payload and connecting, but indexExists throws', async () => {
@@ -2658,10 +2793,11 @@ describe('Index', () => {
                 {key: 'indexExists', params: {name: 'myindex'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should return false if passed valid payload and connecting, but index does not exist', async () => {
@@ -2688,11 +2824,12 @@ describe('Index', () => {
                 {key: 'indexExists', params: {name: 'myindex'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@hasIndex: mycollection ix:myindex - does not exist'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@hasIndex: Index does not exist', {collection: 'mycollection', name: 'myindex'}],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should return true if passed valid payload and connecting, and index exists', async () => {
@@ -2719,11 +2856,12 @@ describe('Index', () => {
                 {key: 'indexExists', params: {name: 'myindex'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@hasIndex: mycollection ix:myindex - exists'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@hasIndex: Index exists', {collection: 'mycollection', name: 'myindex'}],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should return true if passed valid payload and connecting, and index exists, and not log if debug off', async () => {
@@ -2749,7 +2887,8 @@ describe('Index', () => {
                 {key: 'collection', params: {name: 'mycollection'}},
                 {key: 'indexExists', params: {name: 'myindex'}},
             ]);
-            assert.deepEqual(mockConsoleInfo.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
         });
     });
 
@@ -2757,15 +2896,17 @@ describe('Index', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(DBMongo.createIndex === undefined);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             assert.ok(Validator.rules.async_function(instance.createIndex));
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if not passed a string or passed an empty string collection name', async () => {
@@ -2778,8 +2919,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@createIndex: Collection should be a non-empty string');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -2793,8 +2935,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@createIndex: Index Name should be a non-empty string');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -2808,8 +2951,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@createIndex: Invalid spec passed');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -2823,8 +2967,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@createIndex: Invalid spec passed');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -2838,8 +2983,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@createIndex: Invalid spec passed');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -2854,8 +3000,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@createIndex: Options should be an object');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -2882,10 +3029,11 @@ describe('Index', () => {
                 }},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Failed to connect', {err: 'MockClient@db: Oh No!'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@connect: Failed to connect');
         });
 
         it('Should throw if passed valid payload but connect does not return DB instance', async () => {
@@ -2901,8 +3049,9 @@ describe('Index', () => {
                 val = err.message;
             }
             assert.equal(val, 'Mongo@createIndex: Failed to connect');
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
             mockConnect.restore();
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if passed valid payload and connecting, but collection throws', async () => {
@@ -2932,11 +3081,17 @@ describe('Index', () => {
                 {key: 'collection', params: {name: 'mycollection'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@createIndex: Creating index uid_asc on mycollection'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@createIndex: Creating index', {
+                    collection: 'mycollection',
+                    name: 'uid_asc',
+                    options: {expireAfterSeconds: 90},
+                    spec: {uid: 1, name: 1},
+                }],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if passed valid payload and connecting, but createIndex throws', async () => {
@@ -2968,11 +3123,17 @@ describe('Index', () => {
                 {key: 'createIndex', params: {indexSpec: {name: 1, uid: 1}, options: {name: 'uid_asc', expireAfterSeconds: 90}}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@createIndex: Creating index uid_asc on mycollection'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@createIndex: Creating index', {
+                    collection: 'mycollection',
+                    name: 'uid_asc',
+                    options: {expireAfterSeconds: 90},
+                    spec: {uid: 1, name: 1},
+                }],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should return false if passed valid payload and connecting, but index does not exist', async () => {
@@ -2999,11 +3160,18 @@ describe('Index', () => {
                 {key: 'createIndex', params: {indexSpec: {name: 1, uid: 1}, options: {name: 'uid_asc', expireAfterSeconds: 90}}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@createIndex: Creating index uid_asc on mycollection'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@createIndex: Creating index', {
+                    collection: 'mycollection',
+                    name: 'uid_asc',
+                    options: {expireAfterSeconds: 90},
+                    spec: {uid: 1, name: 1},
+                }],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@createIndex: Failed to create index');
         });
 
         it('Should return true if passed valid payload and connecting, and index exists', async () => {
@@ -3030,11 +3198,23 @@ describe('Index', () => {
                 {key: 'createIndex', params: {indexSpec: {name: 1, uid: 1}, options: {name: 'uid_asc'}}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@createIndex: Creating index uid_asc on mycollection'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@createIndex: Creating index', {
+                    collection: 'mycollection',
+                    name: 'uid_asc',
+                    options: {},
+                    spec: {uid: 1, name: 1},
+                }],
+                ['[info] Mongo@createIndex: Index created', {
+                    collection: 'mycollection',
+                    name: 'uid_asc',
+                    options: {},
+                    spec: {uid: 1, name: 1},
+                }],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
     });
 
@@ -3042,15 +3222,17 @@ describe('Index', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(DBMongo.dropIndex === undefined);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             assert.ok(Validator.rules.async_function(instance.dropIndex));
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if not passed a string or passed an empty string collection name', async () => {
@@ -3063,8 +3245,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@dropIndex: Collection should be a non-empty string');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -3078,8 +3261,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@dropIndex: Index Name should be a non-empty string');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -3106,10 +3290,12 @@ describe('Index', () => {
                 }},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Failed to connect', {err: 'MockClient@db: Oh No!'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
             ]);
+
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@connect: Failed to connect');
         });
 
         it('Should throw if passed valid payload but connect does not return DB instance', async () => {
@@ -3125,8 +3311,9 @@ describe('Index', () => {
                 val = err.message;
             }
             assert.equal(val, 'Mongo@dropIndex: Failed to connect');
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
             mockConnect.restore();
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should return false if passed valid payload and connecting, but collection throws', async () => {
@@ -3151,11 +3338,13 @@ describe('Index', () => {
                 {key: 'collection', params: {name: 'mycollection'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@dropIndex: Dropping index myindex on mycollection'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@dropIndex: Dropping index', {collection: 'mycollection', name: 'myindex'}],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@dropIndex: Failed to drop index');
         });
 
         it('Should return false if passed valid payload and connecting, but dropIndex throws', async () => {
@@ -3182,11 +3371,13 @@ describe('Index', () => {
                 {key: 'dropIndex', params: {name: 'myindex'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@dropIndex: Dropping index myindex on mycollection'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@dropIndex: Dropping index', {collection: 'mycollection', name: 'myindex'}],
             ]);
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@dropIndex: Failed to drop index');
         });
 
         it('Should return true if passed valid payload and connecting, and dropIndex succeeds', async () => {
@@ -3213,11 +3404,13 @@ describe('Index', () => {
                 {key: 'dropIndex', params: {name: 'myindex'}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@dropIndex: Dropping index myindex on mycollection'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@dropIndex: Dropping index', {collection: 'mycollection', name: 'myindex'}],
+                ['[info] Mongo@dropIndex: Index dropped', {collection: 'mycollection', name: 'myindex'}],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
     });
 
@@ -3225,16 +3418,18 @@ describe('Index', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(DBMongo.query === undefined);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should not be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             assert.ok(Validator.rules.function(instance.query));
             assert.ok(Validator.rules.async_function(instance.query) === false);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if not passed a string or passed an empty string collection name', () => {
@@ -3247,8 +3442,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@query: Collection should be a non-empty string');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+                assert.ok(mockConsoleError.isEmpty);
             }
         });
 
@@ -3256,6 +3452,7 @@ describe('Index', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             const q = instance.query('  mycollection   ');
             assert.ok(q instanceof Query);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should pass the correct data to Query', async () => {
@@ -3274,9 +3471,9 @@ describe('Index', () => {
                 {key: 'db', params: {name: 'main', opts: {readPreference: 'nearest', retryWrites: true}}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
             ]);
             assert.deepEqual(MockDb.calls, [
                 {key: 'collection', params: {name: 'mycollection'}},
@@ -3284,6 +3481,7 @@ describe('Index', () => {
             assert.deepEqual(mock_col.calls, [
                 {key: 'aggregate', params: {options: {}, pipeline: [{$match: {hello: 'world'}}]}},
             ]);
+            assert.ok(mockConsoleError.isEmpty);
         });
     });
 
@@ -3291,16 +3489,18 @@ describe('Index', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(DBMongo.aggregate === undefined);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should not be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             assert.ok(Validator.rules.function(instance.aggregate));
             assert.ok(Validator.rules.async_function(instance.aggregate));
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw if not passed a string or passed an empty string collection name', async () => {
@@ -3314,8 +3514,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@aggregate: Collection should be a non-empty string');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.ok(mockConsoleError.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
             }
         });
 
@@ -3329,8 +3530,9 @@ describe('Index', () => {
                     val = err.message;
                 }
                 assert.equal(val, 'Mongo@aggregate: Pipeline should be a non-empty array');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+                assert.ok(MockClient.isEmpty);
+                assert.ok(mockConsoleError.isEmpty);
+                assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
             }
         });
 
@@ -3343,8 +3545,9 @@ describe('Index', () => {
                 val = err.message;
             }
             assert.equal(val, 'Mongo@aggregate: Pipeline empty after sanitization');
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
         });
 
         it('Should not throw and return query aggregate if passed a pipeline array consisting of some non/empty objects', async () => {
@@ -3372,10 +3575,11 @@ describe('Index', () => {
                 }},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
             assert.deepEqual(MockDb.calls, [
                 {key: 'collection', params: {name: 'mycollection'}},
             ]);
@@ -3389,15 +3593,17 @@ describe('Index', () => {
         it('Should not be static', () => {
             /* @ts-ignore */
             assert.ok(DBMongo.close === undefined);
-            assert.deepEqual(mockConsoleInfo.calls, []);
-            assert.deepEqual(MockClient.calls, []);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.ok(MockClient.isEmpty);
         });
 
         it('Should be an async function', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             assert.ok(Validator.rules.async_function(instance.close));
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
-            assert.deepEqual(MockClient.calls, []);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should not do anything and be successful if client is not connected', async () => {
@@ -3409,8 +3615,9 @@ describe('Index', () => {
                 val = err.message;
             }
             assert.equal(val, false);
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mockConsoleInfo.calls, [['Mongo: Instantiated']]);
+            assert.ok(MockClient.isEmpty);
+            assert.deepEqual(mockConsoleInfo.calls, [['[info] Mongo@ctor: Instantiated']]);
+            assert.ok(mockConsoleError.isEmpty);
         });
 
         it('Should throw and not de disconnected if calling client close throws', async () => {
@@ -3444,12 +3651,14 @@ describe('Index', () => {
                 {key: 'close', params: {}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@close: Closing connection'],
-                ['Mongo@close: Failed to terminate', {err: 'MockClient@close: Oh No!'}],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@close: Closing connection'],
             ]);
+
+            assert.equal(mockConsoleError.calls.length, 1);
+            assert.equal(mockConsoleError.calls[0]![0] as string, '[error] Mongo@close: Failed to terminate');
             assert.equal(instance.isConnected, true);
         });
 
@@ -3484,12 +3693,13 @@ describe('Index', () => {
                 {key: 'close', params: {}},
             ]);
             assert.deepEqual(mockConsoleInfo.calls, [
-                ['Mongo: Instantiated'],
-                ['Mongo@connect: Establishing connection'],
-                ['Mongo@connect: Connection established'],
-                ['Mongo@close: Closing connection'],
-                ['Mongo@close: Connection terminated'],
+                ['[info] Mongo@ctor: Instantiated'],
+                ['[info] Mongo@connect: Establishing connection'],
+                ['[info] Mongo@connect: Connection established'],
+                ['[info] Mongo@close: Closing connection'],
+                ['[info] Mongo@close: Connection Terminated'],
             ]);
+            assert.ok(mockConsoleError.isEmpty);
             assert.equal(instance.isConnected, false);
         });
     });

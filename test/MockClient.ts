@@ -71,6 +71,10 @@ export default class MockClient extends MongoClient {
         return calls;
     }
 
+    static get isEmpty () {
+        return calls.length === 0;
+    }
+
     static mock () {
         MockClient.reset();
 

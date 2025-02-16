@@ -37,3 +37,25 @@ export enum ReadPreferences {
 }
 
 export type ReadPreference = `${ReadPreferences}`;
+
+/**
+ * LogLevel enumeration
+ */
+export enum LogLevel {
+    DEBUG = 'debug',
+    INFO = 'info',
+    WARN = 'warn',
+    ERROR = 'error',
+}
+
+/**
+ * Types of Log Object shapes
+ */
+export type LogObject =
+    | {level: LogLevel.DEBUG | LogLevel.INFO | LogLevel.WARN; fn:string; msg:string; data?:{[key:string]:unknown}}
+    | {level: LogLevel.ERROR; fn:string; msg:string; err:Error; data?:{[key:string]:unknown}};
+
+/**
+ * Logger Function type
+ */
+export type LogFn = (log:LogObject) => void;

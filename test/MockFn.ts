@@ -88,6 +88,10 @@ export default class MockFn {
     this.reset();
   }
 
+  get isEmpty () {
+    return this.calls.length === 0;
+  }
+
   /**
    * Restore the mocked function to its original state
    */

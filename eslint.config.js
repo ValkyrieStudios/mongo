@@ -45,7 +45,7 @@ module.exports = [
             "no-array-constructor": "error",
             "no-caller": "error",
             "no-confusing-arrow": "error",
-            "no-console": ["error", { "allow": ["warn", "error"] }],
+            "no-console": ["error", { "allow": ["info", "warn", "error"] }],
             "no-div-regex": "error",
             "no-eq-null": "error",
             "no-eval": "error",

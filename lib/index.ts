@@ -2,6 +2,7 @@ import {Validator} from '@valkyriestudios/validator';
 import {isNeArray} from '@valkyriestudios/utils/array';
 import {isObject, isNeObject} from '@valkyriestudios/utils/object';
 import {isFunction} from '@valkyriestudios/utils/function/is';
+import {noop} from '@valkyriestudios/utils/function';
 import {isNotEmptyString} from '@valkyriestudios/utils/string/isNotEmpty';
 import {fnv1A} from '@valkyriestudios/utils/hash/fnv1A';
 import {Query} from './Query';
@@ -18,11 +19,33 @@ import {
     type Protocol,
     ReadPreferences,
     type ReadPreference,
+    LogLevel,
+    type LogObject,
+    type LogFn,
 } from './Types';
+
+/* Standard logger function in case debug is turned on without a logger */
+const stdLogger = (log:LogObject) => {
+    const msg = '[' + log.level + '] ' + log.fn + ': ' + log.msg;
+    if (log.level === LogLevel.ERROR) {
+        if (log.data) {
+            console.error(msg, log.err, log.data);
+        } else {
+            console.error(msg, log.err, log.data);
+        }
+    } else if (log.data) {
+        console.info(msg, log.data);
+    } else {
+        console.info(msg);
+    }
+};
 
 type MongoHostFullOptions = {
     /* Whether or not we should debug, this is internal to the library and purely focuses on pool events (defaults to false) */
     debug: boolean;
+
+    /* Debug levels, defaults to ['info', 'error', 'warn'] */
+    debug_levels: LogLevel[];
 
     /* Size of the connection pool (defaults to 5) */
     pool_size: number;
@@ -68,6 +91,9 @@ type MongoUriFullOptions = {
     /* Whether or not we should debug, this is internal to the library and purely focuses on pool events (defaults to false) */
     debug: boolean;
 
+    /* Debug levels, defaults to ['info', 'error', 'warn'] */
+    debug_levels: LogLevel[];
+
     /* Size of the connection pool (defaults to 5) */
     pool_size: number;
 
@@ -94,8 +120,12 @@ type MongoUriFullOptions = {
 }
 
 /* Required mongo options */
-type MongoHostOptions = Partial<MongoHostFullOptions> & Required<Pick<MongoHostFullOptions, 'user' | 'pass' | 'db'>>;
-type MongoUriOptions = Partial<MongoUriFullOptions> & Required<Pick<MongoUriFullOptions, 'uri'>>;
+type MongoHostOptions = Partial<MongoHostFullOptions> & Required<Pick<MongoHostFullOptions, 'user' | 'pass' | 'db'>> & {
+    logger?: LogFn;
+};
+type MongoUriOptions = Partial<MongoUriFullOptions> & Required<Pick<MongoUriFullOptions, 'uri'>> & {
+    logger?: LogFn;
+};
 
 export type MongoOptions = MongoHostOptions | MongoUriOptions;
 
@@ -118,6 +148,7 @@ const CustomValidator = Validator.extend({
     mongo_enum_protocols: Object.values(Protocols),
     mongo_enum_read_pref: Object.values(ReadPreferences),
     mongo_enum_index_val: [-1, 1],
+    mongo_debug_level: Object.values(LogLevel),
     mongo_uri: /^(mongodb(?:\+srv)?):\/\/(?:([^:@]+)(?::([^@]+))?@)?([A-Za-z0-9.-]+(?::\d+)?(?:,[A-Za-z0-9.-]+(?::\d+)?)*)(?:\/([^/?]+)?)?(?:\?(.*))?$/, /* eslint-disable-line max-len */
     mongo_collection_structure_index: {
         name: 'string_ne|min:1|max:128',
@@ -133,6 +164,7 @@ const vCollectionStructure = CustomValidator.create({
 
 const vOptions = CustomValidator.create({
     debug               : 'boolean',
+    debug_levels        : '[unique]mongo_debug_level',
     pool_size           : 'integer|min:1|max:100',
     host                : 'string_ne|min:1|max:1024',
     user                : 'string_ne|min:1|max:256',
@@ -150,6 +182,7 @@ const vOptions = CustomValidator.create({
 
 const vUriOptions = CustomValidator.create({
     debug               : 'boolean',
+    debug_levels        : '[unique]mongo_debug_level',
     uri                 : 'mongo_uri',
     pool_size           : 'integer|min:1|max:100',
     db                  : 'string_ne|min:1|max:128',
@@ -162,6 +195,7 @@ const vUriOptions = CustomValidator.create({
 
 const DEFAULTS = {
     debug: false,
+    debug_levels: [LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR],
     pool_size: 5,
     read_preference: ReadPreferences.NEAREST,
     retry_reads: true,
@@ -286,10 +320,7 @@ class Mongo {
     #uid:string;
 
     /* Internal log function */
-    #log = (...args:any[]) => {
-        if (!this.#config.debug) return;
-        console.info(...args); /* eslint-disable-line no-console */
-    };
+    #log:LogFn = noop;
 
     constructor (connection_opts:MongoOptions) {
         /* Verify that the options passed are in the form of an object */
@@ -303,11 +334,35 @@ class Mongo {
         this.#config = config;
         this.#uri = uri;
 
+        /* If debug, swap out logger */
+        if (this.#config.debug) {
+            const logProxy = function (obj:LogObject) {
+                /* eslint-disable-next-line */
+                /* @ts-ignore */
+                // eslint-disable-next-line no-invalid-this
+                if (!this.levels.has(obj.level)) return;
+
+                /* eslint-disable-next-line */
+                /* @ts-ignore */
+                // eslint-disable-next-line no-invalid-this
+                this.fn(obj);
+            };
+
+            /* eslint-disable-next-line */
+            /* @ts-ignore */
+            logProxy.levels = new Set([...this.#config.debug_levels]);
+
+            /* eslint-disable-next-line */
+            /* @ts-ignore */
+            logProxy.fn = isFunction(connection_opts.logger) ? connection_opts.logger : stdLogger;
+
+            this.#log = logProxy.bind(logProxy);
+        }
+
         /* Create instance uid */
         this.#uid = `mongodb:${fnv1A({uri: this.#uri, db: this.#config.db})}`;
 
-        /* Log */
-        this.#log('Mongo: Instantiated');
+        this.#log({level: LogLevel.INFO, fn: 'Mongo@ctor', msg: 'Instantiated'});
     }
 
     /**
@@ -317,6 +372,13 @@ class Mongo {
      */
     get uid ():string {
         return this.#uid;
+    }
+
+    /**
+     * Getter which returns the configured log function
+     */
+    get log ():LogFn {
+        return this.#log;
     }
 
     /**
@@ -351,14 +413,14 @@ class Mongo {
 
         try {
             /* Log */
-            this.#log('Mongo@bootstrap: ------ Connectivity check');
+            this.#log({level: LogLevel.INFO, fn: 'Mongo@bootstrap', msg: 'Connectivity check'});
 
             /* Connect (this will throw if failing to connect) */
             await this.connect();
 
             /* If structure is provided, run collection/index builds */
             if (isNeArray(structure)) {
-                this.#log('Mongo@bootstrap: ------ Ensuring structure');
+                this.#log({level: LogLevel.INFO, fn: 'Mongo@bootstrap', msg: 'Ensuring structure'});
                 for (const struct of structure) {
                     /* Create collection if it doesnt exist */
                     const col_exists = await this.hasCollection(struct.name);
@@ -378,16 +440,16 @@ class Mongo {
                         );
                     }
                 }
-                this.#log('Mongo@bootstrap: ------ Structure ensured');
+                this.#log({level: LogLevel.INFO, fn: 'Mongo@bootstrap', msg: 'Structure ensured'});
             }
 
             /* Close connection (cleanup) */
             await this.close();
 
             /* Log */
-            this.#log('Mongo@bootstrap: ------ Connectivity success');
+            this.#log({level: LogLevel.INFO, fn: 'Mongo@bootstrap', msg: 'Connectivity success'});
         } catch (err) {
-            this.#log('Mongo@bootstrap: ------ Connectivity failure');
+            this.#log({level: LogLevel.ERROR, fn: 'Mongo@bootstrap', msg: 'Connectivity failure', err: err as Error, data: {structure}});
             throw err;
         }
     }
@@ -405,7 +467,7 @@ class Mongo {
             if (this.#mongo_database) return this.#mongo_database;
 
             /* Log */
-            this.#log('Mongo@connect: Establishing connection');
+            this.#log({level: LogLevel.INFO, fn: 'Mongo@connect', msg: 'Establishing connection'});
 
             /**
              * Await client connection pool instantiation
@@ -438,7 +500,7 @@ class Mongo {
             if (!(this.#mongo_database instanceof Db)) throw new Error('Mongo@connect: Failed to create database instance');
 
             /* Log */
-            if (this.isDebugEnabled) console.info('Mongo@connect: Connection established'); /* eslint-disable-line no-console */
+            this.#log({level: LogLevel.INFO, fn: 'Mongo@connect', msg: 'Connection established'});
 
             return this.#mongo_database;
         } catch (err) {
@@ -447,7 +509,7 @@ class Mongo {
             this.#mongo_database    = false;
 
             /* Log */
-            this.#log('Mongo@connect: Failed to connect', {err: err instanceof Error ? err.message : 'Unknown Error'});
+            this.#log({level: LogLevel.ERROR, fn: 'Mongo@connect', msg: 'Failed to connect', err: err as Error});
 
             throw err;
         }
@@ -474,8 +536,12 @@ class Mongo {
 
         const exists = isNeArray(await result.toArray());
 
-        /* Log */
-        this.#log(`Mongo@hasCollection: ${name} - ${exists ? 'exists' : 'does not exist'}`);
+        this.#log({
+            level: LogLevel.INFO,
+            fn: 'Mongo@hasCollection',
+            msg: exists ? 'Collection exists' : 'Collection does not exist',
+            data: {collection: name},
+        });
 
         return exists;
     }
@@ -497,9 +563,18 @@ class Mongo {
         const name = collection.trim();
 
         /* Log */
-        this.#log(`Mongo@createCollection: Creating collection - ${name}`);
-
+        this.#log({level: LogLevel.INFO, fn: 'Mongo@createCollection', msg: 'Creating collection', data: {collection: name}});
         const result = await db.createCollection(name);
+
+        this.#log(result
+            ? {level: LogLevel.INFO, fn: 'Mongo@createCollection', msg: 'Collection created', data: {collection: name}}
+            : {
+                level: LogLevel.ERROR,
+                fn: 'Mongo@createCollection',
+                msg: 'Did not create collection',
+                err: new Error('Failed to create collection'),
+                data: {collection: name},
+            });
 
         return result instanceof Collection;
     }
@@ -521,9 +596,12 @@ class Mongo {
         const name = collection.trim();
 
         /* Log */
-        this.#log(`Mongo@dropCollection: Dropping collection - ${name}`);
+        this.#log({level: LogLevel.WARN, fn: 'Mongo@dropCollection', msg: 'Dropping collection', data: {collection: name}});
 
         const result = await db.dropCollection(name);
+        this.#log(result
+            ? {level: LogLevel.WARN, fn: 'Mongo@dropCollection', msg: 'Collection dropped', data: {collection: name}}
+            : {level: LogLevel.WARN, fn: 'Mongo@dropCollection', msg: 'Did not drop collection', data: {collection: name}});
 
         return !!result;
     }
@@ -550,7 +628,12 @@ class Mongo {
         const result = await db.collection(col_name).indexExists(idx_name);
 
         /* Log */
-        this.#log(`Mongo@hasIndex: ${col_name} ix:${idx_name} - ${result ? 'exists' : 'does not exist'}`);
+        this.#log({
+            level: LogLevel.INFO,
+            fn: 'Mongo@hasIndex',
+            msg: result ? 'Index exists' : 'Index does not exist',
+            data: {collection: col_name, name: idx_name},
+        });
 
         return !!result;
     }
@@ -589,10 +672,31 @@ class Mongo {
         const idx_name = name.trim();
 
         /* Log */
-        this.#log(`Mongo@createIndex: Creating index ${idx_name} on ${col_name}`);
+        this.#log({
+            level: LogLevel.INFO,
+            fn: 'Mongo@createIndex',
+            msg: 'Creating index',
+            data: {collection: col_name, name: idx_name, spec, options},
+        });
 
         /* Create Index */
         const result = await db.collection(col_name).createIndex(spec, {...options, name: idx_name});
+
+        this.#log(result
+            ? {
+                level: LogLevel.INFO,
+                fn: 'Mongo@createIndex',
+                msg: 'Index created',
+                data: {collection: col_name, name: idx_name, spec, options},
+            }
+            : {
+                level: LogLevel.ERROR,
+                fn: 'Mongo@createIndex',
+                msg: 'Failed to create index',
+                err: new Error('Failed to create index'),
+                data: {collection: col_name, name: idx_name, spec, options},
+            }
+        );
 
         return isNotEmptyString(result);
     }
@@ -616,14 +720,21 @@ class Mongo {
         const col_name = collection.trim();
         const idx_name = name.trim();
 
-        /* Log */
-        this.#log(`Mongo@dropIndex: Dropping index ${idx_name} on ${col_name}`);
+        this.#log({level: LogLevel.INFO, fn: 'Mongo@dropIndex', msg: 'Dropping index', data: {collection: col_name, name: idx_name}});
 
         /* Drop Index */
         try {
             await db.collection(col_name).dropIndex(idx_name);
+            this.#log({level: LogLevel.INFO, fn: 'Mongo@dropIndex', msg: 'Index dropped', data: {collection: col_name, name: idx_name}});
             return true;
-        } catch {
+        } catch (err) {
+            this.#log({
+                level: LogLevel.ERROR,
+                fn: 'Mongo@dropIndex',
+                msg: 'Failed to drop index',
+                err: err as Error,
+                data: {collection: col_name, name: idx_name},
+            });
             return false;
         }
     }
@@ -674,7 +785,7 @@ class Mongo {
 
         try {
             /* Log */
-            this.#log('Mongo@close: Closing connection');
+            this.#log({level: LogLevel.INFO, fn: 'Mongo@close', msg: 'Closing connection'});
 
             /* Close client pool */
             await this.#mongo_client.close();
@@ -684,10 +795,9 @@ class Mongo {
             this.#mongo_database = false;
 
             /* Log */
-            this.#log('Mongo@close: Connection terminated');
+            this.#log({level: LogLevel.INFO, fn: 'Mongo@close', msg: 'Connection Terminated'});
         } catch (err) {
-            /* Log */
-            this.#log('Mongo@close: Failed to terminate', {err: err instanceof Error ? err.message : 'Unknown Error'});
+            this.#log({level: LogLevel.ERROR, fn: 'Mongo@close', msg: 'Failed to terminate', err: err as Error});
         }
     }
 

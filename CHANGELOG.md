@@ -7,6 +7,24 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 ### Added
+- **feat**: You can now pass your own log function as part of the options to a mongo instance. This log function will receive an object containing level, fn, msg, (optional) err and data. Important to note that **logging will only happen if debug is passed as true**. Here's an example log function:
+```typescript
+const mongo = new Mongo({
+    ...
+    debug: true,
+    logger: function (log:LogObject) {
+        console.log('[' + log.level + '] ' + log.fn + ': ' + log.msg);
+    },
+});
+```
+- **feat**: You can now control which levels get logged by passing an array of levels as options. The four available levels are `debug`, `info`, `warn`, `error`. For Example:
+```typescript
+const mongo = new Mongo({
+    ...
+    debug: true,
+    debug_levels: ['warn', 'error'], // Only warn and error logs get logged
+});
+```
 - **feat**: Query@insertOne - Added ability to run a single insertion
 
 ### Improved

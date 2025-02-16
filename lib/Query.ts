@@ -212,10 +212,10 @@ class Query <TModel extends Document = Document> {
      * @param {Filter<Document>} query - Query that matches the documents to be updated
      * @param {UpdateFilter<Document>} data - Update to run
      * @param {UpdateOptions} options - Update Options
-     * @returns {Promise<UpdateResult>} Result of the query
+     * @returns {Promise<boolean>} Result of the query
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async updateOne (query:Filter<TModel>, data:UpdateFilter<TModel>, options:UpdateOptions = {}):Promise<UpdateResult> {
+    async updateOne (query:Filter<TModel>, data:UpdateFilter<TModel>, options:UpdateOptions = {}):Promise<boolean> {
         if (!isNeObject(query)) throw new Error('MongoQuery@updateOne: Query should be an object with content');
         if (!isNeObject(data) && !isNeArray(data)) throw new Error('MongoQuery@updateOne: Data should be an object/array with content');
         if (!isObject(options)) throw new Error('MongoQuery@updateOne: Options should be an object');
@@ -230,9 +230,22 @@ class Query <TModel extends Document = Document> {
             /* Run query */
             const result = await db.collection(this.#col).updateOne(query as Filter<Document>, data as UpdateFilter<Document>, options);
             if (!result?.acknowledged) throw new Error('Unacknowledged');
-            return result;
+            this.#log({
+                level: LogLevel.DEBUG,
+                fn: 'MongoQuery@updateOne',
+                msg: 'Update succeeded',
+                data: {query, options, result},
+            });
+            return true;
         } catch (err) {
-            throw new Error(`MongoQuery@updateOne: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
+            this.#log({
+                level: LogLevel.ERROR,
+                fn: 'MongoQuery@updateOne',
+                msg: 'Failed',
+                err: err as Error,
+                data: {query, data, options},
+            });
+            return false;
         }
     }
 
@@ -242,10 +255,10 @@ class Query <TModel extends Document = Document> {
      * @param {Filter<Document>} query - Query that matches the documents to be updated
      * @param {UpdateFilter<Document>} data - Update to run
      * @param {UpdateOptions} options - Update Options
-     * @returns {Promise<UpdateResult>} Result of the query
+     * @returns {Promise<boolean>} Result of the query
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async updateMany (query:Filter<TModel>, data:UpdateFilter<TModel>, options:UpdateOptions = {}):Promise<UpdateResult> {
+    async updateMany (query:Filter<TModel>, data:UpdateFilter<TModel>, options:UpdateOptions = {}):Promise<boolean> {
         if (!isNeObject(query)) throw new Error('MongoQuery@updateMany: Query should be an object with content');
         if (!isNeObject(data) && !isNeArray(data)) throw new Error('MongoQuery@updateMany: Data should be an object/array with content');
         if (!isObject(options)) throw new Error('MongoQuery@updateMany: Options should be an object');
@@ -260,9 +273,22 @@ class Query <TModel extends Document = Document> {
             /* Run query */
             const result = await db.collection(this.#col).updateMany(query as Filter<Document>, data as UpdateFilter<Document>, options);
             if (!result?.acknowledged) throw new Error('Unacknowledged');
-            return result;
+            this.#log({
+                level: LogLevel.DEBUG,
+                fn: 'MongoQuery@updateMany',
+                msg: 'Updated succeeded',
+                data: {query, options, result},
+            });
+            return true;
         } catch (err) {
-            throw new Error(`MongoQuery@updateMany: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
+            this.#log({
+                level: LogLevel.ERROR,
+                fn: 'MongoQuery@updateMany',
+                msg: 'Failed to update',
+                err: err as Error,
+                data: {query, options},
+            });
+            return false;
         }
     }
 

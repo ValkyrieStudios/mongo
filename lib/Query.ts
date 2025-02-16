@@ -161,10 +161,10 @@ class Query <TModel extends Document = Document> {
      *
      * @param {Filter<Document>} query - Query that matches the document to be removed
      * @param {DeleteOptions} options - (default={}) Remove options
-     * @returns {Promise<DeleteResult>} Result of the query
+     * @returns {Promise<boolean>} Result of the query
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async removeOne (query:Filter<TModel>, options:DeleteOptions = {}):Promise<DeleteResult> {
+    async removeOne (query:Filter<TModel>, options:DeleteOptions = {}):Promise<boolean> {
         if (!isNeObject(query)) throw new Error('MongoQuery@removeOne: Query should be an object with content');
         if (!isObject(options)) throw new Error('MongoQuery@removeOne: Options should be an object');
 
@@ -175,9 +175,23 @@ class Query <TModel extends Document = Document> {
             /* Run query */
             const result = await db.collection(this.#col).deleteOne(query as Filter<Document>, options);
             if (!result?.acknowledged) throw new Error('Unacknowledged');
-            return result;
+
+            this.#log({
+                level: LogLevel.DEBUG,
+                fn: 'MongoQuery@removeOne',
+                msg: 'Removal succeeded',
+                data: {query, options, result},
+            });
+            return true;
         } catch (err) {
-            throw new Error(`MongoQuery@removeOne: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
+            this.#log({
+                level: LogLevel.ERROR,
+                fn: 'MongoQuery@removeOne',
+                msg: 'Failed to remove',
+                err: err as Error,
+                data: {query, options},
+            });
+            return false;
         }
     }
 
@@ -186,10 +200,10 @@ class Query <TModel extends Document = Document> {
      *
      * @param {Filter<Document>} query - Query that matches the documents to be removed
      * @param {DeleteOptions} options - (default={}) Remove options
-     * @returns {Promise<DeleteResult>} Result of the query
+     * @returns {Promise<boolean>} Result of the query
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async removeMany (query:Filter<TModel>, options:DeleteOptions = {}):Promise<DeleteResult> {
+    async removeMany (query:Filter<TModel>, options:DeleteOptions = {}):Promise<boolean> {
         if (!isNeObject(query)) throw new Error('MongoQuery@removeMany: Query should be an object with content');
         if (!isObject(options)) throw new Error('MongoQuery@removeMany: Options should be an object');
 
@@ -200,9 +214,22 @@ class Query <TModel extends Document = Document> {
             /* Run query */
             const result = await db.collection(this.#col).deleteMany(query as Filter<Document>, options);
             if (!result?.acknowledged) throw new Error('Unacknowledged');
-            return result;
+            this.#log({
+                level: LogLevel.DEBUG,
+                fn: 'MongoQuery@removeMany',
+                msg: 'Removal succeeded',
+                data: {query, options, result},
+            });
+            return true;
         } catch (err) {
-            throw new Error(`MongoQuery@removeMany: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
+            this.#log({
+                level: LogLevel.ERROR,
+                fn: 'MongoQuery@removeMany',
+                msg: 'Failed to remove',
+                err: err as Error,
+                data: {query, options},
+            });
+            return false;
         }
     }
 

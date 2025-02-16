@@ -7,6 +7,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 ### Improved
+- **feat**: Query@removeOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
+- **feat**: Query@removeMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@updateOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@updateMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@count will now make use of the countDocuments interface instead of count as the latter is deprecated.

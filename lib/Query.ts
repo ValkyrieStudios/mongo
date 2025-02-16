@@ -5,18 +5,18 @@ import {isObject, isNeObject} from '@valkyriestudios/utils/object';
 import {isArray, isNeArray, dedupe} from '@valkyriestudios/utils/array';
 import {Mongo}  from './index';
 import {
+    type InsertOneOptions,
+    type InsertOneResult,
     type AggregateOptions,
     type BulkWriteResult,
     type CountOptions,
     type DeleteOptions,
-    type DeleteResult,
     type Document,
     type Filter,
     type OrderedBulkOperation,
     type UnorderedBulkOperation,
     type UpdateFilter,
     type UpdateOptions,
-    type UpdateResult,
 } from 'mongodb';
 
 type BulkOperator = OrderedBulkOperation|UnorderedBulkOperation;
@@ -320,13 +320,50 @@ class Query <TModel extends Document = Document> {
     }
 
     /**
-     * Insert one or multiple documents into a specific collection
+     * Insert a document into a specific collection
      *
-     * @param {Document[]} documents - Array of documents to insert
-     * @returns {Promise<BulkWriteResult>} Result of the query
+     * @param {Document} document - Document to insert
+     * @param {InsertOneOptions} options - Update Options
+     * @returns {Promise<InsertOneResult>} Result of the query
      * @throws {Error} When provided options are invalid or connection fails
      */
-    async insertMany (documents:TModel[]):Promise<BulkWriteResult> {
+    async insertOne (document:TModel, options:InsertOneOptions = {}):Promise<InsertOneResult['insertedId']|null> {
+        if (!isNeObject(document)) throw new Error('MongoQuery@insertOne: Document should be a non-empty object');
+        if (!isObject(options)) throw new Error('MongoQuery@insertOne: Options should be an object');
+
+        try {
+            /* Connect */
+            const db = await this.#instance.connect();
+
+            /* Run query */
+            const result = await db.collection(this.#col).insertOne(document, options);
+            if (!result?.acknowledged) throw new Error('Unacknowledged');
+            this.#log({
+                level: LogLevel.DEBUG,
+                fn: 'MongoQuery@insertOne',
+                msg: 'Insert succeeded',
+                data: {options, result},
+            });
+            return result.insertedId;
+        } catch (err) {
+            this.#log({
+                level: LogLevel.ERROR,
+                fn: 'MongoQuery@insertOne',
+                msg: 'Failed to insert',
+                err: err as Error,
+            });
+            return null;
+        }
+    }
+
+    /**
+     * Insert multiple documents into a specific collection
+     *
+     * @param {Document[]} documents - Array of documents to insert
+     * @returns {Promise<boolean>} Result of the query
+     * @throws {Error} When provided options are invalid or connection fails
+     */
+    async insertMany (documents:TModel[]):Promise<boolean> {
         if (!isNeArray(documents)) throw new Error('MongoQuery@insertMany: Documents should be an array with content');
 
         const normalized_documents = dedupe(documents, {filter_fn: isNeObject});
@@ -340,9 +377,21 @@ class Query <TModel extends Document = Document> {
             }, false);
             if (result?.insertedCount !== normalized_documents.length) throw new Error('Not all documents were inserted');
 
-            return result;
+            this.#log({
+                level: LogLevel.DEBUG,
+                fn: 'MongoQuery@insertMany',
+                msg: 'Insert succeeded',
+                data: {result},
+            });
+            return true;
         } catch (err) {
-            throw new Error(`MongoQuery@insertMany: Failed - ${err instanceof Error ? err.message : 'Unknown Error'}`);
+            this.#log({
+                level: LogLevel.ERROR,
+                fn: 'MongoQuery@insertMany',
+                msg: 'Failed to insert',
+                err: err as Error,
+            });
+            return false;
         }
     }
 

@@ -654,6 +654,23 @@ await MyMongo.query('users').updateMany(
 ```
 
 
+### insertOne (document:Document, options:InsertOneOptions):Promise<InsertOneResult>
+Insert a document into a specific collection.
+
+Example usage where we are inserting a new user into a user collection:
+```typescript
+import guid     from '@valkyriestudios/utils/hash/guid';
+import MyMongo  from './Mongo';
+
+await MyMongo.query('users').insertOne({
+    uid: guid(),
+    first_name: 'Peter',
+    last_name: 'Vermeulen',
+    created_at: new Date()
+});
+```
+
+
 ### insertMany (documents:Document[]):Promise<BulkWriteResult>
 Insert one or multiple documents into a specific collection, this method requires you to pass an array of documents. Take note that this method will automatically dedupe the provided array.
 

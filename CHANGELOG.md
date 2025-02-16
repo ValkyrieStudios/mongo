@@ -6,11 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- **feat**: Query@insertOne - Added ability to run a single insertion
+
 ### Improved
 - **feat**: Query@removeOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@removeMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@updateOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@updateMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
+- **feat**: Query@insertMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@count will now make use of the countDocuments interface instead of count as the latter is deprecated.
 - **deps**: Upgrade @valkyriestudios/utils to 12.31.1
 - **deps**: Upgrade @valkyriestudios/validator to 10.0.0

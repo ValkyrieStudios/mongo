@@ -142,16 +142,15 @@ class Query <TModel extends Document = Document> {
         ) throw new Error('MongoQuery@findOne: If passed, projection should be an object');
 
         try {
-            /* Run query */
-            const result = await this.aggregate<T>([
-                ...isNeObject(query) ? [{$match: query}] : [],
-                {$limit: 1},
-                ...isNeObject(projection) ? [{$project: projection}] : [],
-            ]);
+            /* Connect */
+            const db = await this.#instance.connect();
 
-            return isNeArray(result) && isObject(result[0]) ? result[0] : null;
+            /* Run query */
+            const result = await db.collection(this.#col).findOne(query as Filter<Document>, projection ? {projection} : undefined);
+
+            return isObject(result) ? result as T : null;
         } catch (err) {
-            const msg = err instanceof Error ? err.message.replace('MongoQuery@aggregate: Failed - ', '') : 'Unknown Error';
+            const msg = err instanceof Error ? err.message : 'Unknown Error';
             throw new Error(`MongoQuery@findOne: Failed - ${msg}`);
         }
     }

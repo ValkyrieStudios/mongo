@@ -10,6 +10,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - **feat**: Query@insertOne - Added ability to run a single insertion
 
 ### Improved
+- **feat**: Query@findOne now makes use of native findOne rather than an aggregation pipeline
 - **feat**: Query@removeOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@removeMany will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface
 - **feat**: Query@updateOne will now return a boolean true/false if the operation was successful. System failures will now be logged to the new logger interface

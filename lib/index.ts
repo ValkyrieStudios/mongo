@@ -43,7 +43,7 @@ type MongoHostFullOptions = {
     auth_db: string;
 
     /* Name of the Replica set to use (defaults to false, not always necessary to pass) */
-    replset: string|false;
+    replset: string|boolean;
 
     /* Mongo protocol to use (defaults to 'mongodb') */
     protocol: Protocol;
@@ -114,28 +114,24 @@ type CollectionStructure = {
  * Validation Setup
  */
 
-Validator.extendEnum({
-    valkyrie_mongo_enum_protocols: Object.values(Protocols),
-    valkyrie_mongo_enum_read_pref: Object.values(ReadPreferences),
-    valkyrie_mongo_enum_index_val: [-1, 1],
+const CustomValidator = Validator.extend({
+    mongo_enum_protocols: Object.values(Protocols),
+    mongo_enum_read_pref: Object.values(ReadPreferences),
+    mongo_enum_index_val: [-1, 1],
+    mongo_uri: /^(mongodb(?:\+srv)?):\/\/(?:([^:@]+)(?::([^@]+))?@)?([A-Za-z0-9.-]+(?::\d+)?(?:,[A-Za-z0-9.-]+(?::\d+)?)*)(?:\/([^/?]+)?)?(?:\?(.*))?$/, /* eslint-disable-line max-len */
+    mongo_collection_structure_index: {
+        name: 'string_ne|min:1|max:128',
+        spec: '{min:1}mongo_enum_index_val',
+        options: '?object_ne',
+    },
 });
 
-Validator.extendRegex({
-    valkyrie_mongo_uri: /^(mongodb(?:\+srv)?):\/\/(?:([^:@]+)(?::([^@]+))?@)?([A-Za-z0-9.-]+(?::\d+)?(?:,[A-Za-z0-9.-]+(?::\d+)?)*)(?:\/([^/?]+)?)?(?:\?(.*))?$/, /* eslint-disable-line max-len */
-});
-
-Validator.extendSchema<CollectionIndexStructure>('valkyrie_mongo_collection_structure_index', {
-    name: 'string_ne|min:1|max:128',
-    spec: '{min:1}valkyrie_mongo_enum_index_val',
-    options: '?object_ne',
-});
-
-const vCollectionStructure = new Validator<CollectionStructure>({
+const vCollectionStructure = CustomValidator.create({
     name    : 'string_ne|min:1|max:128',
-    idx     : '?[unique]valkyrie_mongo_collection_structure_index',
+    idx     : '?[unique]mongo_collection_structure_index',
 });
 
-const vOptions = new Validator<MongoHostFullOptions>({
+const vOptions = CustomValidator.create({
     debug               : 'boolean',
     pool_size           : 'integer|min:1|max:100',
     host                : 'string_ne|min:1|max:1024',
@@ -143,21 +139,21 @@ const vOptions = new Validator<MongoHostFullOptions>({
     pass                : 'string_ne|min:1|max:256',
     db                  : 'string_ne|min:1|max:128',
     auth_db             : 'string_ne|min:1|max:128',
-    replset             : '(string_ne|min:1|max:128)(false)',
-    protocol            : 'valkyrie_mongo_enum_protocols',
-    read_preference     : 'valkyrie_mongo_enum_read_pref',
+    replset             : ['string_ne|min:1|max:128', 'false'],
+    protocol            : 'mongo_enum_protocols',
+    read_preference     : 'mongo_enum_read_pref',
     retry_reads         : 'boolean',
     retry_writes        : 'boolean',
     connect_timeout_ms  : 'integer|min:1000',
     socket_timeout_ms   : 'integer|min:0',
 });
 
-const vUriOptions = new Validator<MongoUriFullOptions>({
+const vUriOptions = CustomValidator.create({
     debug               : 'boolean',
-    uri                 : 'valkyrie_mongo_uri',
+    uri                 : 'mongo_uri',
     pool_size           : 'integer|min:1|max:100',
     db                  : 'string_ne|min:1|max:128',
-    read_preference     : 'valkyrie_mongo_enum_read_pref',
+    read_preference     : 'mongo_enum_read_pref',
     retry_reads         : 'boolean',
     retry_writes        : 'boolean',
     connect_timeout_ms  : 'integer|min:1000',
@@ -185,13 +181,12 @@ function validateStructure (structure:CollectionStructure[], msg:string) {
         /* Baseline validation of structure */
         if (!vCollectionStructure.check(struct)) throw new Error(`${msg}: All collection objects need to be valid`);
 
-        /* If no indexes dont do anything */
-        if (!isNeArray(struct.idx)) continue;
-
         /* Ensure indexes have unique names */
-        const idx_unique_set:Set<string> = new Set();
-        for (const idx of struct.idx) idx_unique_set.add(idx.name);
-        if (idx_unique_set.size !== struct.idx.length) throw new Error(`${msg}: Ensure all indexes have a unique name`);
+        if (struct.idx) {
+            const idx_unique_set:Set<string> = new Set();
+            for (let i = 0; i < struct.idx.length; i++) idx_unique_set.add(struct.idx[i].name);
+            if (idx_unique_set.size !== struct.idx.length) throw new Error(`${msg}: Ensure all indexes have a unique name`);
+        }
     }
 }
 
@@ -244,7 +239,7 @@ function getConfigFromUriOptions (opts:MongoUriOptions):{config:MongoUriFullOpti
     /* Validate options, throw if invalid */
     if (!vUriOptions.check(config)) throw new Error('Mongo@ctor: options are invalid');
 
-    return {config: config as MongoUriFullOptions, uri: opts.uri};
+    return {config, uri: opts.uri};
 }
 
 /**
@@ -270,7 +265,7 @@ function getConfigFromHostOptions (opts:MongoHostOptions):{config:MongoHostFullO
     let uri = `${config.protocol}://${config.user}:${config.pass}@${config.host}/${config.auth_db}`;
     if (config.replset) uri += `?replicaSet=${config.replset}`;
 
-    return {config: config as MongoHostFullOptions, uri};
+    return {config, uri};
 }
 
 class Mongo {
@@ -475,7 +470,7 @@ class Mongo {
         const name = collection.trim();
 
         const result = await db.listCollections({name});
-        if (!isObject(result) || !isFunction(result.toArray)) throw new Error('Mongo@hasCollection: Unexpected result');
+        if (!isFunction(result?.toArray)) throw new Error('Mongo@hasCollection: Unexpected result');
 
         const exists = isNeArray(await result.toArray());
 

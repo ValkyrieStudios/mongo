@@ -9,10 +9,6 @@
 
 Simplified mongo wrapper library for JS backends
 
-## Installation
-`npm install @valkyriestudios/mongo`
-
-
 ## Introduction
 This library offers a simple approach to working with MongoDB instances, offering both direct connectivity as well as the ability to connect to Atlas clusters through the mongodb+srv protocol.
 
@@ -20,6 +16,16 @@ Among other defaults, it works with connection pooling and applies zlib compress
 
 If there's anything missing in this library that you deem a necessity, feel free to open a pull request or shoot us a suggestion ;)
 
+## Installation
+`npm install @valkyriestudios/mongo`
+
+## Table of contents
+- [Getting Started](#getting-started)
+- [Configuration](#configuration)
+- [Available Functions](#available-functions)
+- [Querying](#querying)
+- [Logging](#logging)
+- [Contributors](#contributors)
 
 ## Getting Started
 The best way(s) to get started is by creating an instance and exporting it or creating a class that extends from this library's main export and passing the configuration to its super constructor (we only suggest this approach if you want to override certain behaviors).
@@ -56,13 +62,15 @@ const instance = new MyMongo();
 export default instance;
 ```
 
-
+## Configuration
 #### Options (Host connection)
 The following is the list of options available for configuration as well as their defaults. Most of these options have sensible defaults and as such, only a handful are truly required.
 
 | Option | Meaning | Required | Default |
 |--------|----------|---------|---------|
 | **debug** | Internal debug option for @valkyriestudios/mongo, logging will be done on system console if enabled | | `false` |
+| **debug_levels** | Which log levels should be logged and which should be ignored. Available options are `info`, `warn`, `debug`, `error` | | `['info', 'warn', 'error']` |
+| **logger** | A custom log function where logs will be sent to if debug is turned on. Read more about logging below | | |
 | **pool_size** | The size of the internal connection pool, for safety reasons this will be validated as **an integer between 1 and 100** | | `5` |
 | **host** | Host URL to connect to | | `127.0.0.1:27017` |
 | **user** | Name of the user to connect with | yes | |
@@ -97,6 +105,8 @@ The following is the list of options available for configuration as well as thei
 | Option | Meaning | Required | Default |
 |--------|----------|---------|---------|
 | **debug** | Internal debug option for @valkyriestudios/mongo, logging will be done on system console if enabled | | `false` |
+| **debug_levels** | Which log levels should be logged and which should be ignored. Available options are `info`, `warn`, `debug`, `error` | | `['info', 'warn', 'error']` |
+| **logger** | A custom log function where logs will be sent to if debug is turned on. Read more about logging below | | |
 | **pool_size** | The size of the internal connection pool, for safety reasons this will be validated as **an integer between 1 and 100** | | `5` |
 | **uri** | Uri Connection string | yes | `mongodb+srv://peter:rootroot@myfancyHost.com/myDb` |
 | **db** | Database to use for the connection pool (only required IF the connection string does not select DB) | | |
@@ -708,6 +718,63 @@ await MyMongo.query('users').bulkOps(bulk_op => {
 });
 ```
 
+## Logging
+This library provides a flexible logging system that lets you control how logs are recorded. By default, the library uses a simple logger that writes to the console, but you can also supply your own custom logger function.
+
+### Log Object Structure
+Every log entry is expected to follow a specific structure:
+- **level**: The log level (one of `debug`, `info`, `warn`, `error`).
+- **fn**: The name of the function or module that generated the log.
+- **msg**: A descriptive message about the log event.
+- **data** (optional): Additional contextual data as a key/value object.
+- **err** (only for errors): The associated Error object when logging errors.
+
+Example log objects:
+```typescript
+// A standard info log:
+{
+  level: 'info',
+  fn: 'Mongo@connect',
+  msg: 'Connection established',
+  data: { host: '127.0.0.1:27017' }
+}
+
+// An error log:
+{
+  level: 'error',
+  fn: 'Mongo@dropIndex',
+  msg: 'Failed to drop index',
+  err: new Error('Index not found'),
+  data: { collection: 'users', index: 'name_index' }
+}
+```
+### Logger Function
+The logger function must follow the following signature:
+
+```typescript
+export type LogFn = (log: LogObject) => void;
+```
+
+When instantiating your Mongo connection you can pass your own logger function as part of the configuration:
+```typescript
+const customLogger: LogFn = (log) => {
+  // For example, write logs to a file or integrate with a logging service
+  console.debug(`[CustomLogger] [${log.level}] ${log.fn}: ${log.msg}`, log.data);
+};
+
+const mongo = new Mongo({
+  ...
+  debug: true,
+  // Supply your custom logger:
+  logger: customLogger,
+  ...
+});
+```
+
+Important to note:
+- Only if you turn on `debug` will logs be used
+- Only the selected `debug levels` will be used
+- We will never log credentials or exponential data to the logger
 
 ## Contributors
 - [Peter Vermeulen](https://www.linkedin.com/in/petervermeulen1/)

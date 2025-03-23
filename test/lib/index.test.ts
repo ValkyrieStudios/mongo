@@ -2021,6 +2021,99 @@ describe('Index', () => {
                 }},
             ]);
         });
+
+        it('Should pass provided auth mechanism properties to connect', async () => {
+            const app = new DBMongo({
+                debug: false,
+                pool_size: 42,
+                uri: 'mongodb://root:rootroot@127.0.0.1:27017/spiderman?retryWrites=false',
+                db: 'spiderman',
+                read_preference: 'nearest',
+                retry_reads: false,
+                connect_timeout_ms: 8000,
+                socket_timeout_ms: 0,
+                auth_mechanism_properties: {
+                    SERVICE_NAME: 'PetersService',
+                    ALLOWED_HOSTS: ['peter.com', 'peter2.com'],
+                },
+            });
+            MockClient.setConnectMode('success');
+            MockClient.setDbMode('success');
+            let db;
+            for (let i = 0; i < 100; i++) db = await app.connect();
+            assert.ok(db instanceof Db);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.deepEqual(MockClient.calls.length, 2);
+            assert.deepEqual(MockClient.calls, [
+                {key: 'connect', params: {
+                    opts: {
+                        compressors: ['zlib'],
+                        connectTimeoutMS: 8000,
+                        maxConnecting: 42,
+                        maxPoolSize: 42,
+                        minPoolSize: 1,
+                        readPreference: 'nearest',
+                        retryReads: false,
+                        retryWrites: false,
+                        socketTimeoutMS: 0,
+                        zlibCompressionLevel: 3,
+                        authMechanismProperties: {
+                            SERVICE_NAME: 'PetersService',
+                            ALLOWED_HOSTS: ['peter.com', 'peter2.com'],
+                        },
+                    },
+                    uri: 'mongodb://root:rootroot@127.0.0.1:27017/spiderman?retryWrites=false',
+                }},
+                {key: 'db', params: {
+                    name: 'spiderman',
+                    opts: {readPreference: 'nearest', retryWrites: false},
+                }},
+            ]);
+        });
+
+        it('Should not pass provided auth mechanism properties to connect if empty', async () => {
+            const app = new DBMongo({
+                debug: false,
+                pool_size: 5,
+                uri: 'mongodb://root:rootroot@127.0.0.1:27017/spiderman?retryWrites=false',
+                db: 'spiderman',
+                read_preference: 'nearest',
+                retry_reads: false,
+                connect_timeout_ms: 8000,
+                socket_timeout_ms: 0,
+                auth_mechanism_properties: {},
+            });
+            MockClient.setConnectMode('success');
+            MockClient.setDbMode('success');
+            let db;
+            for (let i = 0; i < 100; i++) db = await app.connect();
+            assert.ok(db instanceof Db);
+            assert.ok(mockConsoleInfo.isEmpty);
+            assert.ok(mockConsoleError.isEmpty);
+            assert.deepEqual(MockClient.calls.length, 2);
+            assert.deepEqual(MockClient.calls, [
+                {key: 'connect', params: {
+                    opts: {
+                        compressors: ['zlib'],
+                        connectTimeoutMS: 8000,
+                        maxConnecting: 5,
+                        maxPoolSize: 5,
+                        minPoolSize: 1,
+                        readPreference: 'nearest',
+                        retryReads: false,
+                        retryWrites: false,
+                        socketTimeoutMS: 0,
+                        zlibCompressionLevel: 3,
+                    },
+                    uri: 'mongodb://root:rootroot@127.0.0.1:27017/spiderman?retryWrites=false',
+                }},
+                {key: 'db', params: {
+                    name: 'spiderman',
+                    opts: {readPreference: 'nearest', retryWrites: false},
+                }},
+            ]);
+        });
     });
 
     describe('hasCollection', () => {

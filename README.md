@@ -109,6 +109,7 @@ The following is the list of options available for configuration as well as thei
 | **logger** | A custom log function where logs will be sent to if debug is turned on. Read more about logging below | | |
 | **pool_size** | The size of the internal connection pool, for safety reasons this will be validated as **an integer between 1 and 100** | | `5` |
 | **uri** | Uri Connection string | yes | `mongodb+srv://peter:rootroot@myfancyHost.com/myDb` |
+| **auth_mechanism_properties** | Auth Mechanism Properties (for example see: https://www.mongodb.com/community/forums/t/mongodb-nodejs-driver-6-15-0-released/315891) | | `{AWS_CREDENTIAL_PROVIDER: fromNodeProviderChain()}` |
 | **db** | Database to use for the connection pool (only required IF the connection string does not select DB) | | |
 | **read_preference** | MongoDB Read Preference (See: https://www.mongodb.com/docs/manual/core/read-preference) | | `'nearest'` |
 | **retry_reads** | Whether or not to retry reads when they fail | | `true` |

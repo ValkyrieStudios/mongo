@@ -12,6 +12,7 @@ import {
     Collection,
     type CreateIndexesOptions,
     type Document,
+    type AuthMechanismProperties,
 } from 'mongodb';
 
 import {
@@ -117,6 +118,9 @@ type MongoUriFullOptions = {
 
     /* Time in milliseconds to attempt a send or receive on a socket before the attempt times out */
     socket_timeout_ms: number;
+
+    /* Auth mechanism properties (eg: AWS_CREDENTIAL_PROVIDER) */
+    auth_mechanism_properties?: AuthMechanismProperties;
 }
 
 /* Required mongo options */
@@ -191,6 +195,19 @@ const vUriOptions = CustomValidator.create({
     retry_writes        : 'boolean',
     connect_timeout_ms  : 'integer|min:1000',
     socket_timeout_ms   : 'integer|min:0',
+    auth_mechanism_properties: ['?', {
+        SERVICE_HOST: '?string_ne',
+        SERVICE_NAME: '?string_ne',
+        SERVICE_REALM: '?string_ne',
+        CANONICALIZE_HOST_NAME: ['?', 'boolean', 'literal:none', 'literal:forward', 'literal:forwardAndReverse'],
+        AWS_SESSION_TOKEN: '?string_ne',
+        OIDC_CALLBACK: '?async_function',
+        OIDC_HUMAN_CALLBACK: '?async_function',
+        ENVIRONMENT: ['?', 'literal:test', 'literal:azure', 'literal:gcp', 'literal:k8s'],
+        ALLOWED_HOSTS: '?[unique|min:1]string_ne',
+        TOKEN_RESOURCE: '?string_ne',
+        AWS_CREDENTIAL_PROVIDER: '?async_function',
+    }],
 });
 
 const DEFAULTS = {
@@ -273,7 +290,7 @@ function getConfigFromUriOptions (opts:MongoUriOptions):{config:MongoUriFullOpti
     /* Validate options, throw if invalid */
     if (!vUriOptions.check(config)) throw new Error('Mongo@ctor: options are invalid');
 
-    return {config, uri: opts.uri};
+    return {config: config as MongoUriFullOptions, uri: opts.uri};
 }
 
 /**
@@ -485,6 +502,9 @@ class Mongo {
                 retryWrites         : this.#config.retry_writes,
                 compressors         : ['zlib'],
                 zlibCompressionLevel: 3,
+                ...isNeObject((this.#config as MongoUriFullOptions).auth_mechanism_properties)
+                    ? {authMechanismProperties: (this.#config as MongoUriFullOptions).auth_mechanism_properties}
+                    : {},
             });
             if (!(this.#mongo_client instanceof MongoClient)) throw new Error('Mongo@connect: Failed to create client pool');
 

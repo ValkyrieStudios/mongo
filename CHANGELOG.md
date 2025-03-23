@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- **feat**: Add possibility to work with auth mechanism properties in uri connect (for more, [see release](https://www.mongodb.com/community/forums/t/mongodb-nodejs-driver-6-15-0-released/315891)).
+Work with provider chain from AWS SDK:
+```typescript
+import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
+
+const mongo = new Mongo({
+    uri: "...",
+    auth_mechanism_properties: {
+        AWS_CREDENTIAL_PROVIDER: fromNodeProviderChain(),
+    },
+});
+```
+
+Provide as async function:
+```typescript
+const mongo = new Mongo({
+    uri: "...",
+    auth_mechanism_properties: {
+        AWS_CREDENTIAL_PROVIDER: async () => {
+            return {
+                accessKeyId: process.env.ACCESS_KEY_ID,
+                secretAccessKey: process.env.SECRET_ACCESS_KEY,
+            };
+        },
+    },
+});
+```
+
 ### Improved
 - **deps**: Upgrade @types/node to 22.13.11
 - **deps**: Upgrade @valkyriestudios/utils to 12.35.0

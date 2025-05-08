@@ -10,7 +10,8 @@
         "test:coverage": "nyc npm run test",
         "lint": "npm run lint:src && npm run lint:test",
         "lint:src": "./node_modules/.bin/eslint ./lib",
-        "lint:test": "./node_modules/.bin/eslint ./test"
+        "lint:test": "./node_modules/.bin/eslint ./test",
+        "types": "tsc -p ./tsconfig.json --noEmit"
     },
     "author": {
         "name": "Peter Vermeulen",

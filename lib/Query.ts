@@ -1,6 +1,6 @@
 import {isBoolean} from '@valkyriestudios/utils/boolean/is';
-import {isAsync, isFunction} from '@valkyriestudios/utils/function';
-import {isNotEmptyString} from '@valkyriestudios/utils/string/isNotEmpty';
+import {isAsyncFn, isFn} from '@valkyriestudios/utils/function';
+import {isNeString} from '@valkyriestudios/utils/string';
 import {isObject, isNeObject} from '@valkyriestudios/utils/object';
 import {isArray, isNeArray, dedupe} from '@valkyriestudios/utils/array';
 import {Mongo}  from './index';
@@ -36,7 +36,7 @@ class Query <TModel extends Document = Document> {
 
     constructor (instance:Mongo, col:string) {
         if (!(instance instanceof Mongo)) throw new Error('MongoQuery: Expected instance of Mongo');
-        if (!isNotEmptyString(col)) throw new Error('MongoQuery: Expected collection to be a non-empty string');
+        if (!isNeString(col)) throw new Error('MongoQuery: Expected collection to be a non-empty string');
 
         this.#instance  = instance;
         this.#col       = col;
@@ -420,7 +420,7 @@ class Query <TModel extends Document = Document> {
      * @throws {Error} When provided options are invalid or connection fails
      */
     async bulkOps (fn:BulkOperatorFunction, sorted:boolean = false):Promise<BulkWriteResult|null> {
-        if (!isFunction(fn)) throw new Error('MongoQuery@bulkOps: Fn should be a function');
+        if (!isFn(fn)) throw new Error('MongoQuery@bulkOps: Fn should be a function');
         if (!isBoolean(sorted)) throw new Error('MongoQuery@bulkOps: Sorted should be a boolean');
 
         try {
@@ -429,10 +429,10 @@ class Query <TModel extends Document = Document> {
 
             /* Instantiate bulk operator */
             const bulk_operator = db.collection(this.#col)[sorted === false ? 'initializeUnorderedBulkOp' : 'initializeOrderedBulkOp']();
-            if (!isObject(bulk_operator) || !isFunction(bulk_operator.execute)) throw new Error('Not able to acquire bulk operation');
+            if (!isObject(bulk_operator) || !isFn(bulk_operator.execute)) throw new Error('Not able to acquire bulk operation');
 
             /* Pass bulk operator to fn */
-            if (!isAsync(fn)) {
+            if (!isAsyncFn(fn)) {
                 fn(bulk_operator);
             } else {
                 await fn(bulk_operator);

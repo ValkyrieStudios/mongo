@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Improved
+- **deps**: Upgrade @types/node to 22.15.16
+- **deps**: Upgrade @valkyriestudios/utils to 12.36.0
+- **deps**: Upgrade @valkyriestudios/validator to 10.3.0
+- **deps**: Upgrade eslint to 9.26.0
+- **deps**: Upgrade mongodb to 6.16.0
+- **deps**: Upgrade typescript to 5.8.3
+- **deps**: Upgrade typescript-eslint to 8.32.0
+
 ## [2.3.0] - 2025-03-23
 ### Added
 - **feat**: Add possibility to work with auth mechanism properties in uri connect (for more, [see release](https://www.mongodb.com/community/forums/t/mongodb-nodejs-driver-6-15-0-released/315891)).

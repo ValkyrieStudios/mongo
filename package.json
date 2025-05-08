@@ -75,16 +75,16 @@
         "./package.json": "./package.json"
     },
     "dependencies": {
-        "@valkyriestudios/utils": "^12.35.0",
-        "@valkyriestudios/validator": "^10.2.0",
-        "mongodb": "^6.15.0"
+        "@valkyriestudios/utils": "^12.36.0",
+        "@valkyriestudios/validator": "^10.3.0",
+        "mongodb": "^6.16.0"
     },
     "devDependencies": {
-        "@types/node": "^22.13.11",
+        "@types/node": "^22.15.0",
         "esbuild-register": "^3.6.0",
-        "eslint": "^9.23.0",
+        "eslint": "^9.26.0",
         "nyc": "^17.1.0",
-        "typescript": "^5.8.2",
-        "typescript-eslint": "^8.27.0"
+        "typescript": "^5.8.3",
+        "typescript-eslint": "^8.32.0"
     }
 }

@@ -1,18 +1,17 @@
 /* eslint-disable max-len */
 /* eslint-disable max-lines */
 
-import Validator                                from '@valkyriestudios/validator';
-import {describe, it, beforeEach, afterEach}    from 'node:test';
-import * as assert                              from 'node:assert/strict';
-import Query                                    from '../../lib/Query';
-import DBMongo                                  from '../../lib';
-import CONSTANTS                                from '../constants';
-import MockCollection                           from '../MockCollection';
-import MockClient                               from '../MockClient';
-import MockDb                                   from '../MockDb';
-import MockUnorderedBulkOp                      from '../MockUnorderedBulkOp';
-import MockOrderedBulkOp                        from '../MockOrderedBulkOp';
-import MockFn                                   from '../MockFn';
+import Validator from '@valkyriestudios/validator';
+import {describe, it, beforeEach, afterEach, expect} from 'vitest';
+import Query from '../../lib/Query';
+import DBMongo from '../../lib';
+import CONSTANTS from '../constants';
+import MockCollection from '../MockCollection';
+import MockClient from '../MockClient';
+import MockDb from '../MockDb';
+import MockUnorderedBulkOp from '../MockUnorderedBulkOp';
+import MockOrderedBulkOp from '../MockOrderedBulkOp';
+import MockFn from '../MockFn';
 
 const EXPECTED_CON_PAYLOAD = {
     opts: {
@@ -62,26 +61,24 @@ describe('Query', () => {
     describe('ctor', () => {
         it('Should throw when not passed an instance of Mongo', () => {
             for (const el of [...CONSTANTS.NOT_OBJECT_WITH_EMPTY, {foo: 'bar'}]) {
-                assert.throws(
-                    () => new Query(el, 'mycol'),
-                    new Error('MongoQuery: Expected instance of Mongo')
-                );
+                expect(
+                    () => new Query(el, 'mycol')
+                ).toThrowError(/MongoQuery: Expected instance of Mongo/);
             }
         });
 
         it('Should throw when not passed a valid collection name', () => {
             for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                assert.throws(
-                    () => new Query(mdb_instance, el),
-                    new Error('MongoQuery: Expected collection to be a non-empty string')
-                );
+                expect(
+                    () => new Query(mdb_instance, el)
+                ).toThrowError(/MongoQuery: Expected collection to be a non-empty string/);
             }
         });
 
         it('Should not throw when passed an instance of collection', () => {
             /* @ts-ignore */
-            assert.doesNotThrow(() => new Query(mdb_instance, 'mycollection'));
-            assert.deepEqual(mock_col.calls, []);
+            expect(() => new Query(mdb_instance, 'mycollection')).not.toThrow();
+            expect(mock_col.calls).toEqual([]);
         });
     });
 
@@ -94,13 +91,13 @@ describe('Query', () => {
 
         it('Should not be static', () => {
             /* @ts-ignore */
-            assert.ok(Query.count === undefined);
+            expect(Query.count).toBe(undefined);
         });
 
         it('Should be an async function', () => {
-            assert.ok(Validator.rules.async_function(instance.count));
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(Validator.rules.async_function(instance.count)).toBe(true);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when passed options that are not an object or undefined', async () => {
@@ -112,9 +109,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@count: Options should be an object');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@count: Options should be an object');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -127,9 +124,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@count: Invalid filter passed');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@count: Invalid filter passed');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -144,12 +141,12 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@count: Failed - Mongo@connect: Failed to create database instance');
-                assert.deepEqual(MockClient.calls, [
+                expect(val).toBe('MongoQuery@count: Failed - Mongo@connect: Failed to create database instance');
+                expect(MockClient.calls).toEqual([
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
                 ]);
-                assert.deepEqual(mock_col.calls, []);
+                expect(mock_col.calls).toEqual([]);
             });
 
             it('Should throw when passed valid payload but internal count throws', async () => {
@@ -161,12 +158,12 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@count: Failed - MockCollection@count: Oh No!');
-                assert.deepEqual(MockClient.calls, [
+                expect(val).toBe('MongoQuery@count: Failed - MockCollection@count: Oh No!');
+                expect(MockClient.calls).toEqual([
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
                 ]);
-                assert.deepEqual(mock_col.calls, [{key: 'count', params: {options: {}, query}}]);
+                expect(mock_col.calls).toEqual([{key: 'count', params: {options: {}, query}}]);
             });
 
             it('Should throw when passed valid payload but internal count returns a wrong result', async () => {
@@ -178,46 +175,46 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@count: Failed - Unexpected result');
-                assert.deepEqual(MockClient.calls, [
+                expect(val).toBe('MongoQuery@count: Failed - Unexpected result');
+                expect(MockClient.calls).toEqual([
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
                 ]);
-                assert.deepEqual(mock_col.calls, [{key: 'count', params: {options: {}, query}}]);
+                expect(mock_col.calls).toEqual([{key: 'count', params: {options: {}, query}}]);
             });
 
             it('Should return count when passed valid payload and count succeeds', async () => {
                 const query = {date: {$gt: new Date()}};
                 mock_col.setColCount('success');
                 const out = await instance.count(query);
-                assert.equal(out, 20);
-                assert.deepEqual(MockClient.calls, [
+                expect(out).toBe(20);
+                expect(MockClient.calls).toEqual([
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
                 ]);
-                assert.deepEqual(mock_col.calls, [{key: 'count', params: {options: {}, query}}]);
+                expect(mock_col.calls).toEqual([{key: 'count', params: {options: {}, query}}]);
             });
 
             it('Should allow passing empty query', async () => {
                 mock_col.setColCount('success');
                 const out = await instance.count({});
-                assert.equal(out, 20);
-                assert.deepEqual(MockClient.calls, [
+                expect(out).toBe(20);
+                expect(MockClient.calls).toEqual([
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
                 ]);
-                assert.deepEqual(mock_col.calls, [{key: 'count', params: {options: {}, query: {}}}]);
+                expect(mock_col.calls).toEqual([{key: 'count', params: {options: {}, query: {}}}]);
             });
 
             it('Should allow passing options for query', async () => {
                 mock_col.setColCount('success');
                 const out = await instance.count({}, {allowDiskUse: true});
-                assert.equal(out, 20);
-                assert.deepEqual(MockClient.calls, [
+                expect(out).toBe(20);
+                expect(MockClient.calls).toEqual([
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
                 ]);
-                assert.deepEqual(mock_col.calls, [{key: 'count', params: {options: {allowDiskUse: true}, query: {}}}]);
+                expect(mock_col.calls).toEqual([{key: 'count', params: {options: {allowDiskUse: true}, query: {}}}]);
             });
         });
 
@@ -232,12 +229,12 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@count: Failed - Unexpected result');
-                assert.deepEqual(MockClient.calls, [
+                expect(val).toBe('MongoQuery@count: Failed - Unexpected result');
+                expect(MockClient.calls).toEqual([
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
                 ]);
-                assert.deepEqual(mock_col.calls, []);
+                expect(mock_col.calls).toEqual([]);
             });
 
             it('Should throw when passed valid payload but internal aggregate throws', async () => {
@@ -249,12 +246,12 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@count: Failed - Unexpected result');
-                assert.deepEqual(MockClient.calls, [
+                expect(val).toBe('MongoQuery@count: Failed - Unexpected result');
+                expect(MockClient.calls).toEqual([
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
                 ]);
-                assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                expect(mock_col.calls).toEqual([{key: 'aggregate', params: {options: {}, pipeline: [
                     ...query,
                     {$count: 'count'},
                 ]}}]);
@@ -269,12 +266,12 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@count: Failed - Unexpected result');
-                assert.deepEqual(MockClient.calls, [
+                expect(val).toBe('MongoQuery@count: Failed - Unexpected result');
+                expect(MockClient.calls).toEqual([
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
                 ]);
-                assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                expect(mock_col.calls).toEqual([{key: 'aggregate', params: {options: {}, pipeline: [
                     ...query,
                     {$count: 'count'},
                 ]}}]);
@@ -284,12 +281,12 @@ describe('Query', () => {
                 const query = [{$match: {date: {$gt: new Date()}}}];
                 mock_col.setColAggregate('success', [{count: 5}]);
                 const out = await instance.count(query);
-                assert.equal(out, 5);
-                assert.deepEqual(MockClient.calls, [
+                expect(out).toBe(5);
+                expect(MockClient.calls).toEqual([
                     {key: 'connect', params: EXPECTED_CON_PAYLOAD},
                     {key: 'db', params: EXPECTED_DB_PAYLOAD},
                 ]);
-                assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline: [
+                expect(mock_col.calls).toEqual([{key: 'aggregate', params: {options: {}, pipeline: [
                     ...query,
                     {$count: 'count'},
                 ]}}]);
@@ -307,13 +304,13 @@ describe('Query', () => {
 
         it('Should not be static', () => {
             /* @ts-ignore */
-            assert.ok(Query.aggregate === undefined);
+            expect(Query.aggregate).toBe(undefined);
         });
 
         it('Should be an async function', () => {
-            assert.ok(Validator.rules.async_function(instance.aggregate));
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(Validator.rules.async_function(instance.aggregate)).toBe(true);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when not passed a valid pipeline array', async () => {
@@ -324,9 +321,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@aggregrate: Pipeline should be an array with content');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@aggregrate: Pipeline should be an array with content');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -339,9 +336,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@aggregate: Options should be an object');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@aggregate: Options should be an object');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -352,9 +349,9 @@ describe('Query', () => {
             } catch (err) {
                 val = err.message;
             }
-            assert.equal(val, 'MongoQuery@aggregate: Pipeline is empty after sanitization');
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(val).toBe('MongoQuery@aggregate: Pipeline is empty after sanitization');
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should return an empty array when passed a valid payload but we fail to acquire a connection', async () => {
@@ -362,36 +359,36 @@ describe('Query', () => {
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             const out = await instance.aggregate(pipeline);
-            assert.deepEqual(out, []);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, []);
+            expect(out).toEqual([]);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should return an empty array when passed valid payload but internal aggregate throws', async () => {
             const pipeline = [{$match: {date: {$gt: new Date()}}}];
             mock_col.setColAggregate('throw');
             const out = await instance.aggregate(pipeline);
-            assert.deepEqual(out, []);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {}, pipeline}}]);
+            expect(out).toEqual([]);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'aggregate', params: {options: {}, pipeline}}]);
         });
 
         it('Should return an empty array when passed valid payload but aggregate returns non-array result', async () => {
             const pipeline = [{$match: {date: {$gt: new Date()}}}];
             mock_col.setColAggregate('wrongret');
             const out = await instance.aggregate(pipeline, {allowDiskUse: true});
-            assert.deepEqual(out, []);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {allowDiskUse: true}, pipeline}}]);
+            expect(out).toEqual([]);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'aggregate', params: {options: {allowDiskUse: true}, pipeline}}]);
         });
 
         it('Should not throw and return data when passed valid payload and aggregate returns result', async () => {
             const pipeline = [{$match: {date: {$gt: new Date()}}}];
             mock_col.setColAggregate('success');
             const out = await instance.aggregate(pipeline, {allowDiskUse: true});
-            assert.deepEqual(out, [{bla: 'bla'}]);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'aggregate', params: {options: {allowDiskUse: true}, pipeline}}]);
+            expect(out).toEqual([{bla: 'bla'}]);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'aggregate', params: {options: {allowDiskUse: true}, pipeline}}]);
         });
     });
 
@@ -404,13 +401,13 @@ describe('Query', () => {
 
         it('Should not be static', () => {
             /* @ts-ignore */
-            assert.ok(Query.findOne === undefined);
+            expect(Query.findOne).toBe(undefined);
         });
 
         it('Should be an async function', () => {
-            assert.ok(Validator.rules.async_function(instance.findOne));
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(Validator.rules.async_function(instance.findOne)).toBe(true);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when not passed a valid query', async () => {
@@ -423,9 +420,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@findOne: If passed, query should be an object');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@findOne: If passed, query should be an object');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -438,9 +435,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@findOne: If passed, projection should be an object');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@findOne: If passed, projection should be an object');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -453,9 +450,9 @@ describe('Query', () => {
             } catch (err) {
                 val = err.message;
             }
-            assert.equal(val, 'MongoQuery@findOne: Failed - Mongo@connect: Failed to create database instance');
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, []);
+            expect(val).toBe('MongoQuery@findOne: Failed - Mongo@connect: Failed to create database instance');
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when passed valid payload but internal findOne throws', async () => {
@@ -467,27 +464,27 @@ describe('Query', () => {
             } catch (err) {
                 val = err.message;
             }
-            assert.equal(val, 'MongoQuery@findOne: Failed - MockCollection@findOne: Oh No!');
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'findOne', params: {options: undefined, query}}]);
+            expect(val).toBe('MongoQuery@findOne: Failed - MockCollection@findOne: Oh No!');
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'findOne', params: {options: undefined, query}}]);
         });
 
         it('Should return null when passed valid payload and internal findOne returns wrong result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColFindOne('wrongret');
             const out = await instance.findOne(query);
-            assert.equal(out, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'findOne', params: {options: undefined, query}}]);
+            expect(out).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'findOne', params: {options: undefined, query}}]);
         });
 
         it('Should not throw and return data when passed valid payload and findOne returns result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColFindOne('success');
             const out = await instance.findOne(query, {hello: 1});
-            assert.deepEqual(out, {bla: 'bla'});
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'findOne', params: {options: {projection: {hello: 1}}, query}}]);
+            expect(out).toEqual({bla: 'bla'});
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'findOne', params: {options: {projection: {hello: 1}}, query}}]);
         });
     });
 
@@ -500,13 +497,13 @@ describe('Query', () => {
 
         it('Should not be static', () => {
             /* @ts-ignore */
-            assert.ok(Query.removeOne === undefined);
+            expect(Query.removeOne).toBe(undefined);
         });
 
         it('Should be an async function', () => {
-            assert.ok(Validator.rules.async_function(instance.removeOne));
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(Validator.rules.async_function(instance.removeOne)).toBe(true);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when not passed a valid query object', async () => {
@@ -517,9 +514,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@removeOne: Query should be an object with content');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@removeOne: Query should be an object with content');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -532,9 +529,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@removeOne: Options should be an object');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@removeOne: Options should be an object');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -543,45 +540,45 @@ describe('Query', () => {
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             const out = await instance.removeOne(query);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, []);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when passed valid payload but internal deleteOne throws', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteOne('throw');
             const out = await instance.removeOne(query);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'deleteOne', params: {options: {}, query}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'deleteOne', params: {options: {}, query}}]);
         });
 
         it('Should throw when passed valid payload but internal deleteOne returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteOne('wrongret');
             const out = await instance.removeOne(query);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'deleteOne', params: {options: {}, query}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'deleteOne', params: {options: {}, query}}]);
         });
 
         it('Should throw when passed valid payload but internal deleteMany returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteOne('unack');
             const out = await instance.removeOne(query);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'deleteOne', params: {options: {}, query}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'deleteOne', params: {options: {}, query}}]);
         });
 
         it('Should return true when passed valid payload and internal deleteOne returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteOne('success');
             const out = await instance.removeOne(query, {ordered: true});
-            assert.equal(out, true);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'deleteOne', params: {options: {ordered: true}, query}}]);
+            expect(out).toBe(true);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'deleteOne', params: {options: {ordered: true}, query}}]);
         });
     });
 
@@ -594,13 +591,13 @@ describe('Query', () => {
 
         it('Should not be static', () => {
             /* @ts-ignore */
-            assert.ok(Query.removeMany === undefined);
+            expect(Query.removeMany).toBe(undefined);
         });
 
         it('Should be an async function', () => {
-            assert.ok(Validator.rules.async_function(instance.removeMany));
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(Validator.rules.async_function(instance.removeMany)).toBe(true);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when not passed a valid query object', async () => {
@@ -611,9 +608,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@removeMany: Query should be an object with content');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@removeMany: Query should be an object with content');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -626,9 +623,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@removeMany: Options should be an object');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@removeMany: Options should be an object');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -637,45 +634,45 @@ describe('Query', () => {
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             const out = await instance.removeMany(query);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, []);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should return false when passed valid payload but internal deleteMany throws', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteMany('throw');
             const out = await instance.removeMany(query);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'deleteMany', params: {options: {}, query}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'deleteMany', params: {options: {}, query}}]);
         });
 
         it('Should return false when passed valid payload but internal deleteMany returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteMany('wrongret');
             const out = await instance.removeMany(query);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'deleteMany', params: {options: {}, query}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'deleteMany', params: {options: {}, query}}]);
         });
 
         it('Should return false when passed valid payload but internal deleteMany returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteMany('unack');
             const out = await instance.removeMany(query);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'deleteMany', params: {options: {}, query}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'deleteMany', params: {options: {}, query}}]);
         });
 
         it('Should return true when passed valid payload and internal deleteMany returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColDeleteMany('success');
             const out = await instance.removeMany(query, {ordered: true});
-            assert.equal(out, true);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'deleteMany', params: {options: {ordered: true}, query}}]);
+            expect(out).toBe(true);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'deleteMany', params: {options: {ordered: true}, query}}]);
         });
     });
 
@@ -688,13 +685,13 @@ describe('Query', () => {
 
         it('Should not be static', () => {
             /* @ts-ignore */
-            assert.ok(Query.updateOne === undefined);
+            expect(Query.updateOne).toBe(undefined);
         });
 
         it('Should be an async function', () => {
-            assert.ok(Validator.rules.async_function(instance.updateOne));
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(Validator.rules.async_function(instance.updateOne)).toBe(true);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when not passed a valid query object', async () => {
@@ -705,9 +702,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@updateOne: Query should be an object with content');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@updateOne: Query should be an object with content');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -720,9 +717,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@updateOne: Data should be an object/array with content');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@updateOne: Data should be an object/array with content');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
 
             for (const el of CONSTANTS.NOT_ARRAY_WITH_EMPTY) {
@@ -733,9 +730,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@updateOne: Data should be an object/array with content');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@updateOne: Data should be an object/array with content');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -748,9 +745,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@updateOne: Options should be an object');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@updateOne: Options should be an object');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -761,9 +758,9 @@ describe('Query', () => {
             } catch (err) {
                 val = err.message;
             }
-            assert.equal(val, 'MongoQuery@updateOne: Data pipeline is invalid');
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(val).toBe('MongoQuery@updateOne: Data pipeline is invalid');
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should return false passed a valid payload but we fail to acquire a connection', async () => {
@@ -771,45 +768,45 @@ describe('Query', () => {
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             const out = await instance.updateOne(query, {$inc: {count: 1}});
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, []);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should return false passed valid payload but internal updateOne throws', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateOne('throw');
             const out = await instance.updateOne(query, {$inc: {count: 1}});
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'updateOne', params: {options: {}, query, data: {$inc: {count: 1}}}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'updateOne', params: {options: {}, query, data: {$inc: {count: 1}}}}]);
         });
 
         it('Should return false passed valid payload but internal updateOne returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateOne('wrongret');
             const out = await instance.updateOne(query, {$inc: {count: 1}}, {upsert: true});
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'updateOne', params: {options: {upsert: true}, query, data: {$inc: {count: 1}}}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'updateOne', params: {options: {upsert: true}, query, data: {$inc: {count: 1}}}}]);
         });
 
         it('Should return false passed valid payload but internal updateOne returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateOne('unack');
             const out = await instance.updateOne(query, {$inc: {count: 1}}, {upsert: false});
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'updateOne', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'updateOne', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
         });
 
         it('Should return true when passed valid payload and internal updateOne returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateOne('success');
             const out = await instance.updateOne(query, {$inc: {count: 1}}, {upsert: false});
-            assert.equal(out, true);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'updateOne', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
+            expect(out).toBe(true);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'updateOne', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
         });
     });
 
@@ -822,13 +819,13 @@ describe('Query', () => {
 
         it('Should not be static', () => {
             /* @ts-ignore */
-            assert.ok(Query.updateMany === undefined);
+            expect(Query.updateMany).toBe(undefined);
         });
 
         it('Should be an async function', () => {
-            assert.ok(Validator.rules.async_function(instance.updateMany));
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(Validator.rules.async_function(instance.updateMany)).toBe(true);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when not passed a valid query object', async () => {
@@ -839,9 +836,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@updateMany: Query should be an object with content');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@updateMany: Query should be an object with content');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -854,9 +851,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@updateMany: Data should be an object/array with content');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@updateMany: Data should be an object/array with content');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
 
             for (const el of CONSTANTS.NOT_ARRAY_WITH_EMPTY) {
@@ -867,9 +864,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@updateMany: Data should be an object/array with content');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@updateMany: Data should be an object/array with content');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -882,9 +879,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@updateMany: Options should be an object');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@updateMany: Options should be an object');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -895,9 +892,9 @@ describe('Query', () => {
             } catch (err) {
                 val = err.message;
             }
-            assert.equal(val, 'MongoQuery@updateMany: Data pipeline is invalid');
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(val).toBe('MongoQuery@updateMany: Data pipeline is invalid');
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should return false passed a valid payload but we fail to acquire a connection', async () => {
@@ -905,45 +902,45 @@ describe('Query', () => {
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             const out = await instance.updateMany(query, {$inc: {count: 1}});
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, []);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should return false passed valid payload but internal updateMany throws', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateMany('throw');
             const out = await instance.updateMany(query, {$inc: {count: 1}});
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'updateMany', params: {options: {}, query, data: {$inc: {count: 1}}}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'updateMany', params: {options: {}, query, data: {$inc: {count: 1}}}}]);
         });
 
         it('Should return false passed valid payload but internal updateMany returns a non-object result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateMany('wrongret');
             const out = await instance.updateMany(query, {$inc: {count: 1}}, {upsert: true});
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'updateMany', params: {options: {upsert: true}, query, data: {$inc: {count: 1}}}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'updateMany', params: {options: {upsert: true}, query, data: {$inc: {count: 1}}}}]);
         });
 
         it('Should return false passed valid payload but internal updateMany returns a non-acknowledged result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateMany('unack');
             const out = await instance.updateMany(query, {$inc: {count: 1}}, {upsert: false});
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'updateMany', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'updateMany', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
         });
 
         it('Should return true when passed valid payload and internal updateMany returns valid result', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColUpdateMany('success');
             const out = await instance.updateMany(query, {$inc: {count: 1}}, {upsert: false});
-            assert.equal(out, true);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'updateMany', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
+            expect(out).toBe(true);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'updateMany', params: {options: {upsert: false}, query, data: {$inc: {count: 1}}}}]);
         });
     });
 
@@ -956,13 +953,13 @@ describe('Query', () => {
 
         it('Should not be static', () => {
             /* @ts-ignore */
-            assert.ok(Query.insertOne === undefined);
+            expect(Query.insertOne).toBe(undefined);
         });
 
         it('Should be an async function', () => {
-            assert.ok(Validator.rules.async_function(instance.insertOne));
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(Validator.rules.async_function(instance.insertOne)).toBe(true);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when not passed a valid document', async () => {
@@ -974,9 +971,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@insertOne: Document should be a non-empty object');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@insertOne: Document should be a non-empty object');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -989,9 +986,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@insertOne: Options should be an object');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@insertOne: Options should be an object');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -999,41 +996,41 @@ describe('Query', () => {
             MockClient.setDbMode('wrongret');
             mock_col.setColUnorderedBop('throw');
             const out = await instance.insertOne({uid: 'bla', name: 'Peter'}, {writeConcern: {w: 'majority'}});
-            assert.equal(out, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, []);
+            expect(out).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should return null passed valid payload but internal insertOne throws', async () => {
             mock_col.setColInsertOne('throw');
             const out = await instance.insertOne({uid: 'bla', name: 'Peter'});
-            assert.equal(out, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'insertOne', params: {options: {}, data: {uid: 'bla', name: 'Peter'}}}]);
+            expect(out).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'insertOne', params: {options: {}, data: {uid: 'bla', name: 'Peter'}}}]);
         });
 
         it('Should return null passed valid payload but internal insertOne returns a non-object result', async () => {
             mock_col.setColInsertOne('wrongret');
             const out = await instance.insertOne({uid: 'bla', name: 'Peter'}, {writeConcern: {w: 'majority'}});
-            assert.equal(out, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'insertOne', params: {options: {writeConcern: {w: 'majority'}}, data: {uid: 'bla', name: 'Peter'}}}]);
+            expect(out).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'insertOne', params: {options: {writeConcern: {w: 'majority'}}, data: {uid: 'bla', name: 'Peter'}}}]);
         });
 
         it('Should return null when passed valid payload but internal insertOne returns a non-acknowledged result', async () => {
             mock_col.setColInsertOne('unack');
             const out = await instance.insertOne({uid: 'bla', name: 'Peter'}, {writeConcern: {w: 'majority'}});
-            assert.equal(out, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'insertOne', params: {options: {writeConcern: {w: 'majority'}}, data: {uid: 'bla', name: 'Peter'}}}]);
+            expect(out).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'insertOne', params: {options: {writeConcern: {w: 'majority'}}, data: {uid: 'bla', name: 'Peter'}}}]);
         });
 
         it('Should return result when passed valid payload and internal insertOne returns valid result', async () => {
             mock_col.setColInsertOne('success');
             const out = await instance.insertOne({uid: 'bla', name: 'Peter'});
-            assert.equal(out, 10);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'insertOne', params: {options: {}, data: {uid: 'bla', name: 'Peter'}}}]);
+            expect(out).toBe(10);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'insertOne', params: {options: {}, data: {uid: 'bla', name: 'Peter'}}}]);
         });
     });
 
@@ -1046,13 +1043,13 @@ describe('Query', () => {
 
         it('Should not be static', () => {
             /* @ts-ignore */
-            assert.ok(Query.insertMany === undefined);
+            expect(Query.insertMany).toBe(undefined);
         });
 
         it('Should be an async function', () => {
-            assert.ok(Validator.rules.async_function(instance.insertMany));
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(Validator.rules.async_function(instance.insertMany)).toBe(true);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when not passed a valid documents array', async () => {
@@ -1063,9 +1060,9 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@insertMany: Documents should be an array with content');
-                assert.deepEqual(MockClient.calls, []);
-                assert.deepEqual(mock_col.calls, []);
+                expect(val).toBe('MongoQuery@insertMany: Documents should be an array with content');
+                expect(MockClient.calls).toEqual([]);
+                expect(mock_col.calls).toEqual([]);
             }
         });
 
@@ -1076,9 +1073,9 @@ describe('Query', () => {
             } catch (err) {
                 val = err.message;
             }
-            assert.equal(val, 'MongoQuery@insertMany: Documents is empty after sanitization');
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(val).toBe('MongoQuery@insertMany: Documents is empty after sanitization');
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should return false when passed a documents array but we fail to acquire a connection', async () => {
@@ -1088,11 +1085,11 @@ describe('Query', () => {
                 {first_name: 'Peter', last_name: 'Vermeulen'},
                 {first_name: 'Jack', last_name: 'Bauer'},
             ]);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, []);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should return false when passed a documents array but we fail to create a bulk operator due to it throwing', async () => {
@@ -1101,11 +1098,11 @@ describe('Query', () => {
                 {first_name: 'Peter', last_name: 'Vermeulen'},
                 {first_name: 'Jack', last_name: 'Bauer'},
             ]);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should return false when passed a documents array but we fail to create a bulk operator due to it returning a bad val', async () => {
@@ -1114,11 +1111,11 @@ describe('Query', () => {
                 {first_name: 'Peter', last_name: 'Vermeulen'},
                 {first_name: 'Jack', last_name: 'Bauer'},
             ]);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should return false when passed a documents array but exec on bulk operator throws', async () => {
@@ -1128,16 +1125,16 @@ describe('Query', () => {
                 {first_name: 'Peter', last_name: 'Vermeulen'},
                 {first_name: 'Jack', last_name: 'Bauer'},
             ]);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, [
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([
                 {key: 'ctor', params: {opts: undefined}},
                 {key: 'insert', params: {doc: {first_name: 'Peter', last_name: 'Vermeulen'}, opts: {}}},
                 {key: 'insert', params: {doc: {first_name: 'Jack', last_name: 'Bauer'}, opts: {}}},
                 {key: 'execute', params: {opts: {}}},
             ]);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should return false when passed a document array and execute succeeds but not all documents were inserted', async () => {
@@ -1147,16 +1144,16 @@ describe('Query', () => {
                 {first_name: 'Peter', last_name: 'Vermeulen'},
                 {first_name: 'Jack', last_name: 'Bauer'},
             ]);
-            assert.equal(out, false);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, [
+            expect(out).toBe(false);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([
                 {key: 'ctor', params: {opts: undefined}},
                 {key: 'insert', params: {doc: {first_name: 'Peter', last_name: 'Vermeulen'}, opts: {}}},
                 {key: 'insert', params: {doc: {first_name: 'Jack', last_name: 'Bauer'}, opts: {}}},
                 {key: 'execute', params: {opts: {}}},
             ]);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should succeed when passed a document array and all documents were inserted', async () => {
@@ -1166,16 +1163,16 @@ describe('Query', () => {
                 {first_name: 'Peter', last_name: 'Vermeulen'},
                 {first_name: 'Jack', last_name: 'Bauer'},
             ]);
-            assert.equal(out, true);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, [
+            expect(out).toBe(true);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([
                 {key: 'ctor', params: {opts: undefined}},
                 {key: 'insert', params: {doc: {first_name: 'Peter', last_name: 'Vermeulen'}, opts: {}}},
                 {key: 'insert', params: {doc: {first_name: 'Jack', last_name: 'Bauer'}, opts: {}}},
                 {key: 'execute', params: {opts: {}}},
             ]);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
     });
 
@@ -1188,13 +1185,13 @@ describe('Query', () => {
 
         it('Should not be static', () => {
             /* @ts-ignore */
-            assert.ok(Query.bulkOps === undefined);
+            expect(Query.bulkOps).toBe(undefined);
         });
 
         it('Should be an async function', () => {
-            assert.ok(Validator.rules.async_function(instance.bulkOps));
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
+            expect(Validator.rules.async_function(instance.bulkOps)).toBe(true);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should throw when passed a non-function fn', async () => {
@@ -1205,12 +1202,12 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@bulkOps: Fn should be a function');
+                expect(val).toBe('MongoQuery@bulkOps: Fn should be a function');
             }
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should throw when passed a non-boolean sort', async () => {
@@ -1223,12 +1220,12 @@ describe('Query', () => {
                 } catch (err) {
                     val = err.message;
                 }
-                assert.equal(val, 'MongoQuery@bulkOps: Sorted should be a boolean');
+                expect(val).toBe('MongoQuery@bulkOps: Sorted should be a boolean');
             }
-            assert.deepEqual(MockClient.calls, []);
-            assert.deepEqual(mock_col.calls, []);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(MockClient.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should throw when passed a valid payload but fail to acquire a connection', async () => {
@@ -1236,55 +1233,55 @@ describe('Query', () => {
             MockClient.setDbMode('wrongret');
 
             const val = await instance.bulkOps(operator => operator.insert({bla: true}), false);
-            assert.equal(val, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, []);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(val).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should return null when passed a valid payload but fail to acquire an unordered bulk operator due to it throwing', async () => {
             mock_col.setColUnorderedBop('throw');
 
             const val = await instance.bulkOps(operator => operator.insert({bla: true}), false);
-            assert.equal(val, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(val).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should return null when passed a valid payload but fail to acquire an ordered bulk operator due to it throwing', async () => {
             mock_col.setColOrderedBop('throw');
 
             const val = await instance.bulkOps(operator => operator.insert({bla: true}), true);
-            assert.equal(val, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(val).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should return null when passed a valid payload but fail to acquire an unordered bulk operator due to returning wrong', async () => {
             mock_col.setColUnorderedBop('wrongret');
 
             const val = await instance.bulkOps(operator => operator.insert({bla: true}), false);
-            assert.equal(val, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(val).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should return null when passed a valid payload but fail to acquire an ordered bulk operator due to returning wrong', async () => {
             mock_col.setColOrderedBop('wrongret');
 
             const val = await instance.bulkOps(operator => operator.insert({bla: true}), true);
-            assert.equal(val, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(val).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should return null when passed a valid payload but fail to acquire an unordered bulk operator due to exec throw', async () => {
@@ -1292,15 +1289,15 @@ describe('Query', () => {
             MockUnorderedBulkOp.setModeExec('throw');
 
             const val = await instance.bulkOps(operator => operator.insert({bla: true}), false);
-            assert.equal(val, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, [
+            expect(val).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([
                 {key: 'ctor', params: {opts: undefined}},
                 {key: 'insert', params: {doc: {bla: true}, opts: {}}},
                 {key: 'execute', params: {opts: {}}},
             ]);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should return null when passed a valid payload but fail to acquire an ordered bulk operator due to exec throw', async () => {
@@ -1308,11 +1305,11 @@ describe('Query', () => {
             MockOrderedBulkOp.setModeExec('throw');
 
             const val = await instance.bulkOps(operator => operator.insert({bla: true}), true);
-            assert.equal(val, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, [
+            expect(val).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([
                 {key: 'ctor', params: {opts: undefined}},
                 {key: 'insert', params: {doc: {bla: true}, opts: {}}},
                 {key: 'execute', params: {opts: {}}},
@@ -1324,15 +1321,15 @@ describe('Query', () => {
             MockUnorderedBulkOp.setModeExec('wrongret');
 
             const val = await instance.bulkOps(operator => operator.insert({bla: true}), false);
-            assert.equal(val, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, [
+            expect(val).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([
                 {key: 'ctor', params: {opts: undefined}},
                 {key: 'insert', params: {doc: {bla: true}, opts: {}}},
                 {key: 'execute', params: {opts: {}}},
             ]);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should return null when passed a valid payload but fail to acquire an ordered bulk operator due to exec wrong return', async () => {
@@ -1340,11 +1337,11 @@ describe('Query', () => {
             MockOrderedBulkOp.setModeExec('wrongret');
 
             const val = await instance.bulkOps(operator => operator.insert({bla: true}), true);
-            assert.equal(val, null);
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, [
+            expect(val).toBe(null);
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([
                 {key: 'ctor', params: {opts: undefined}},
                 {key: 'insert', params: {doc: {bla: true}, opts: {}}},
                 {key: 'execute', params: {opts: {}}},
@@ -1356,15 +1353,15 @@ describe('Query', () => {
             MockUnorderedBulkOp.setModeExec('success', {yay: true});
 
             const out = await instance.bulkOps(operator => operator.insert({bla: true}), false);
-            assert.deepEqual(out, {yay: true});
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, [
+            expect(out).toEqual({yay: true});
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([
                 {key: 'ctor', params: {opts: undefined}},
                 {key: 'insert', params: {doc: {bla: true}, opts: {}}},
                 {key: 'execute', params: {opts: {}}},
             ]);
-            assert.deepEqual(MockOrderedBulkOp.calls, []);
+            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
         it('Should succeed when passed a valid payload and ordered bulk operator exec goes right', async () => {
@@ -1372,11 +1369,11 @@ describe('Query', () => {
             MockOrderedBulkOp.setModeExec('success', {yay: true});
 
             const out = await instance.bulkOps(operator => operator.insert({bla: true}), true);
-            assert.deepEqual(out, {yay: true});
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, [
+            expect(out).toEqual({yay: true});
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([
                 {key: 'ctor', params: {opts: undefined}},
                 {key: 'insert', params: {doc: {bla: true}, opts: {}}},
                 {key: 'execute', params: {opts: {}}},
@@ -1388,11 +1385,11 @@ describe('Query', () => {
             MockOrderedBulkOp.setModeExec('success', {yay: true});
 
             const out = await instance.bulkOps(async operator => operator.insert({bla: true}), true);
-            assert.deepEqual(out, {yay: true});
-            assert.deepEqual(MockClient.calls, [{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            assert.deepEqual(mock_col.calls, [{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
-            assert.deepEqual(MockUnorderedBulkOp.calls, []);
-            assert.deepEqual(MockOrderedBulkOp.calls, [
+            expect(out).toEqual({yay: true});
+            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
+            expect(mock_col.calls).toEqual([{key: 'initializeOrderedBulkOp', params: {options: undefined}}]);
+            expect(MockUnorderedBulkOp.calls).toEqual([]);
+            expect(MockOrderedBulkOp.calls).toEqual([
                 {key: 'ctor', params: {opts: undefined}},
                 {key: 'insert', params: {doc: {bla: true}, opts: {}}},
                 {key: 'execute', params: {opts: {}}},

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- **deps**: (dev) vitest@3.1.4
+- **deps**: (dev) @vitest/coverage-v8@3.1.4
+
+### Improved
+- **sys**: Migrate to vitest
+- **misc**: Package.json exports block will now link to cjs/esm built files
+- **cicd**: @valkyriestudios/mongo now has two builds, one for cjs and one for esm, this ensures further tree shaking can take place in runtimes/build systems that support this while ensuring legacy systems using CommonJS are not impacted
+- **cicd**: @valkyriestudios/mongo will now run lint/types/test jobs against the latest bun runtime as well (in addition to already testing node 20 and 22)
+- **deps**: Upgrade @types/node to 22.15.24
+- **deps**: Upgrade @valkyriestudios/utils to 12.39.0
+- **deps**: Upgrade @valkyriestudios/validator to 10.5.0
+- **deps**: Upgrade eslint to 9.27.0
+- **deps**: Upgrade typescript-eslint to 8.33.0
+
+### Removed
+- **deps**: nyc
+
 ## [2.4.0] - 2025-05-08
 ### Improved
 - **misc**: Updated license to include all contributors portion and add license badge to readme

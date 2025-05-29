@@ -2,12 +2,10 @@
     "name": "@valkyriestudios/mongo",
     "version": "2.4.0",
     "description": "MongoDB Adapter Library",
-    "main": "index.js",
     "scripts": {
-        "build": "npm run lint && npm run test && tsc -p ./tsconfig.build.json && tsc -p ./tsconfig.types.json && tsc -p ./tsconfig.types_all.json",
-        "test": "node --require esbuild-register --test ./test/lib/*.test.ts",
-        "test:only": "node --require esbuild-register --test --test-only ./test/lib/*.test.ts",
-        "test:coverage": "nyc npm run test",
+        "build": "rm -rf ./dist && mkdir ./dist && npm run lint && npm run test && tsc -p ./tsconfig.build.esm.json && tsc -p ./tsconfig.build.cjs.json && tsc -p ./tsconfig.types.json && tsc -p ./tsconfig.types_all.json",
+        "test": "vitest run --config vitest.config.ts",
+        "test:coverage": "vitest run --coverage --config vitest.coverage.config.ts",
         "lint": "npm run lint:src && npm run lint:test",
         "lint:src": "./node_modules/.bin/eslint ./lib",
         "lint:test": "./node_modules/.bin/eslint ./test",
@@ -35,57 +33,38 @@
     },
     "homepage": "https://github.com/ValkyrieStudios/mongo#README.md",
     "types": "index.d.ts",
+    "main": "./cjs/index.js",
+    "module": "./esm/index.js",
     "sideEffects": false,
     "exports": {
         ".": {
-            "import": {
-                "default": "./index.js",
-                "types": "./index.d.ts"
-            },
-            "require": {
-                "default": "./index.js",
-                "types": "./index.d.ts"
-            },
-            "default": "./index.js",
-            "types": "./index.d.ts"
+            "types": "./index.d.ts",
+            "import": "./esm/index.js",
+            "require": "./cjs/index.js"
         },
         "./Query": {
-            "import": {
-                "default": "./Query.js",
-                "types": "./Query.d.ts"
-            },
-            "require": {
-                "default": "./Query.js",
-                "types": "./Query.d.ts"
-            },
-            "default": "./Query.js",
-            "types": "./Query.d.ts"
+            "types": "./Query.d.ts",
+            "import": "./esm/Query.js",
+            "require": "./cjs/Query.js"
         },
         "./Types": {
-            "import": {
-                "default": "./Types.js",
-                "types": "./Types.d.ts"
-            },
-            "require": {
-                "default": "./Types.js",
-                "types": "./Types.d.ts"
-            },
-            "default": "./Types.js",
-            "types": "./Types.d.ts"
-        },
-        "./package.json": "./package.json"
+            "types": "./Types.d.ts",
+            "import": "./esm/Types.js",
+            "require": "./cjs/Types.js"
+        }
     },
     "dependencies": {
-        "@valkyriestudios/utils": "^12.36.0",
-        "@valkyriestudios/validator": "^10.3.0",
+        "@valkyriestudios/utils": "^12.39.0",
+        "@valkyriestudios/validator": "^10.5.0",
         "mongodb": "^6.16.0"
     },
     "devDependencies": {
-        "@types/node": "^22.15.0",
+        "@types/node": "^22.15.24",
+        "@vitest/coverage-v8": "^3.1.4",
         "esbuild-register": "^3.6.0",
-        "eslint": "^9.26.0",
-        "nyc": "^17.1.0",
+        "eslint": "^9.27.0",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.32.0"
+        "typescript-eslint": "^8.33.0",
+        "vitest": "^3.1.4"
     }
 }

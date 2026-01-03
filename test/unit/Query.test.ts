@@ -294,6 +294,119 @@ describe('Query', () => {
         });
     });
 
+    describe('exists', () => {
+        let instance: Query;
+
+        beforeEach(() => {
+            instance = new Query(mdb_instance, 'mycollection');
+        });
+
+        it('Should not be static', () => {
+            /* @ts-ignore */
+            expect(Query.exists).toBe(undefined);
+        });
+
+        it('Should be an async function', () => {
+            expect(Validator.rules.async_function(instance.exists)).toBe(true);
+        });
+
+        it('Should return true if count returns > 0', async () => {
+            mock_col.setColCount('success');
+
+            const out = await instance.exists({name: 'Peter'});
+            expect(out).toBe(true);
+
+            // Verify it called count with limit: 1
+            const countCall = mock_col.calls.find((c: any) => c.key === 'count');
+            expect(countCall).toBeDefined();
+            expect((countCall as any).params.options).toEqual({limit: 1});
+        });
+
+        it('Should return false if count returns 0', async () => {
+            const originalCount = instance.count;
+            instance.count = async () => 0; // Force 0
+
+            const out = await instance.exists({name: 'Ghost'});
+            expect(out).toBe(false);
+
+            // Restore
+            instance.count = originalCount;
+        });
+
+        it('Should throw if underlying count throws', async () => {
+            const originalCount = instance.count;
+            instance.count = async () => {
+                throw new Error('DB Error');
+            };
+
+            await expect(instance.exists({name: 'Error'})).rejects.toThrow('DB Error');
+
+            instance.count = originalCount;
+        });
+    });
+
+    describe('distinct', () => {
+        let instance: Query;
+
+        beforeEach(() => {
+            // FIX: We create a new DBMongo instance with debug: true
+            // This ensures that when distinct fails, it actually writes to the mock logger
+            const debug_mongo = new DBMongo({
+                user: 'peter',
+                pass: 'pass',
+                db: 'main',
+                debug: true
+            });
+            instance = new Query(debug_mongo, 'mycollection');
+        });
+
+        it('Should not be static', () => {
+            /* @ts-ignore */
+            expect(Query.distinct).toBe(undefined);
+        });
+
+        it('Should be an async function', () => {
+            expect(Validator.rules.async_function(instance.distinct)).toBe(true);
+        });
+
+        it('Should throw when key is not a valid string', async () => {
+            for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                await expect(instance.distinct(el as any)).rejects.toThrow('MongoQuery@distinct: Key should be a non-empty string');
+            }
+        });
+
+        it('Should return empty array when connection fails', async () => {
+            MockClient.setDbMode('wrongret');
+            const out = await instance.distinct('category');
+
+            expect(out).toEqual([]);
+
+            // This assertion now works because debug: true enabled logging
+            expect(mockConsoleError.calls[0]![0]).toContain('Mongo@connect: Failed to connect');
+        });
+
+        it('Should return empty array when distinct throws', async () => {
+            mock_col.setColDistinct('throw');
+
+            const out = await instance.distinct('category');
+
+            expect(out).toEqual([]);
+            expect(mockConsoleError.calls[0]![0]).toContain('MongoQuery@distinct: Failed to run distinct');
+        });
+
+        it('Should return distinct values on success', async () => {
+            mock_col.setColDistinct('success', ['Apple', 'Banana']);
+
+            const out = await instance.distinct('fruit');
+            expect(out).toEqual(['Apple', 'Banana']);
+
+            expect(mock_col.calls).toContainEqual({
+                key: 'distinct',
+                params: { key: 'fruit', filter: {}, options: {} }
+            });
+        });
+    });
+
     describe('aggregate', () => {
         let instance:Query;
 

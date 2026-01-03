@@ -17,6 +17,7 @@ import {
     type UnorderedBulkOperation,
     type UpdateFilter,
     type UpdateOptions,
+    type DistinctOptions,
 } from 'mongodb';
 import {type LogFn, LogLevel} from './Types';
 
@@ -97,6 +98,16 @@ class Query <TModel extends Document = Document> {
     }
 
     /**
+     * Quickly checks if a document exists matching the filter
+     *
+     * @param {Filter<TModel>} filter - Filter to match
+     */
+    async exists (filter: Filter<TModel> = {}): Promise<boolean> {
+        const count = await this.count(filter, {limit: 1});
+        return count > 0;
+    }
+
+    /**
      * Run an aggregation pipeline against the collection and return its results
      *
      * @param {Document[]} pipeline - Pipeline array to run
@@ -133,6 +144,47 @@ class Query <TModel extends Document = Document> {
                 msg: 'Failed to run aggregation',
                 err: err as Error,
                 data: {pipeline: normalized_pipeline, options},
+            });
+            return [];
+        }
+    }
+
+    /**
+     * Find unique values for a specified field across the collection
+     *
+     * @param {string} key - Field name to get distinct values for
+     * @param {Filter<TModel>} filter - Optional filter to narrow scope
+     * @returns {Promise<any[]>} Array of unique values
+     */
+    async distinct <Key extends keyof TModel> (
+        key: Key & string,
+        filter: Filter<TModel> = {},
+        options: DistinctOptions = {}
+    ): Promise<TModel[Key][]> {
+        if (!isNeString(key)) throw new Error('MongoQuery@distinct: Key should be a non-empty string');
+
+        try {
+            /* Connect */
+            const db = await this.#instance.connect();
+
+            /* Run query */
+            const result = await db.collection(this.#col).distinct(key, filter as Filter<Document>, options);
+            if (!isArray(result)) throw new Error('Unexpected result');
+
+            this.#log({
+                level: LogLevel.DEBUG,
+                fn: 'MongoQuery@distinct',
+                msg: 'Distinct run',
+                data: {key, filter},
+            });
+            return result as TModel[Key][];
+        } catch (err) {
+            this.#log({
+                level: LogLevel.ERROR,
+                fn: 'MongoQuery@distinct',
+                msg: 'Failed to run distinct',
+                err: err as Error,
+                data: {key, filter},
             });
             return [];
         }

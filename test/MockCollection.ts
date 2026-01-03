@@ -25,6 +25,9 @@ export default class MockCollection extends Collection {
     #col_aggregate:MockMode = 'success';
     #col_aggregate_return:unknown[] = [{bla: 'bla'}];
 
+    #col_distinct: MockMode = 'success';
+    #col_distinct_return: unknown[] = ['mock_value_1', 'mock_value_2'];
+
     #col_count:MockMode = 'success';
 
     #col_delete_one:MockMode = 'success';
@@ -71,6 +74,17 @@ export default class MockCollection extends Collection {
         if (this.#col_count === 'wrongret') return 'hello';
 
         return 20;
+    }
+
+    /* eslint-disable-next-line */
+    /* @ts-ignore */
+    async distinct(key: string, filter: Filter<Document>, options: DistinctOptions): Promise<unknown[]> {
+        this.#calls.push({ key: 'distinct', params: { key, filter, options } });
+
+        if (this.#col_distinct === 'throw') throw new Error('MockCollection@distinct: Oh No!');
+        if (this.#col_distinct === 'wrongret') return 'invalid' as unknown as unknown[];
+
+        return this.#col_distinct_return;
     }
 
     async deleteOne (query:Filter<Document>, options:DeleteOptions):Promise<DeleteResult> {
@@ -204,6 +218,11 @@ export default class MockCollection extends Collection {
         this.#col_count = mode;
     }
 
+    setColDistinct(mode: MockMode = 'success', result?: unknown[]) {
+        this.#col_distinct = mode;
+        if (result) this.#col_distinct_return = result;
+    }
+
     setColDeleteOne (mode:MockMode = 'success') {
         this.#col_delete_one = mode;
     }
@@ -240,6 +259,7 @@ export default class MockCollection extends Collection {
         this.#calls = [];
         this.setColAggregate();
         this.setColCount();
+        this.setColDistinct();
         this.setColDeleteOne();
         this.setColDeleteMany();
         this.setColInsertOne();

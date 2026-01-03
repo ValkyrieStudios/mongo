@@ -74,6 +74,15 @@ await db.createIndex('users', 'email_unique_idx',
     }
 );
 ```
+- **deps**: Upgrade @types/node to 24.10.4
+- **deps**: Upgrade @valkyriestudios/utils to 12.48.0
+- **deps**: Upgrade @valkyriestudios/validator to 10.11.0
+- **deps**: Upgrade @vitest/coverage-v8 to 4.0.16
+- **deps**: Upgrade eslint to 9.39.2
+- **deps**: Upgrade mongodb to 6.21.0
+- **deps**: Upgrade typescript to 5.9.3
+- **deps**: Upgrade typescript-eslint to 8.51.0
+- **deps**: Upgrade vitest to 4.0.16
 
 ## [2.7.0] - 2025-09-30
 ### Improved

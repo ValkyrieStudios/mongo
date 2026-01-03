@@ -1,6 +1,6 @@
 {
     "name": "@valkyriestudios/mongo",
-    "version": "2.7.0",
+    "version": "2.8.0",
     "description": "MongoDB Adapter Library",
     "scripts": {
         "build": "rm -rf ./dist && mkdir ./dist && npm run lint && npm run test && tsc -p ./tsconfig.build.esm.json && tsc -p ./tsconfig.build.cjs.json && tsc -p ./tsconfig.types.json && tsc -p ./tsconfig.types_all.json",

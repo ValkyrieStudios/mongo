@@ -23,6 +23,7 @@ import {type LogFn, LogLevel} from './Types';
 
 type BulkOperator = OrderedBulkOperation|UnorderedBulkOperation;
 type BulkOperatorFunction = (operator:BulkOperator) => void;
+type Flatten<T> = T extends ReadonlyArray<infer U> ? U : T;
 
 class Query <TModel extends Document = Document> {
 
@@ -160,7 +161,7 @@ class Query <TModel extends Document = Document> {
         key: Key & string,
         filter: Filter<TModel> = {},
         options: DistinctOptions = {}
-    ): Promise<TModel[Key][]> {
+    ): Promise<Flatten<TModel[Key]>[]> {
         if (!isNeString(key)) throw new Error('MongoQuery@distinct: Key should be a non-empty string');
 
         try {
@@ -177,7 +178,7 @@ class Query <TModel extends Document = Document> {
                 msg: 'Distinct run',
                 data: {key, filter},
             });
-            return result as TModel[Key][];
+            return result as Flatten<TModel[Key][]>;
         } catch (err) {
             this.#log({
                 level: LogLevel.ERROR,

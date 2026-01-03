@@ -207,11 +207,11 @@ import MyMongo from './Mongo';
 await MyMongo.bootstrap([
     {name: 'users', idx: [
         {name: 'uid_asc', spec: {uid: 1}},
-        {name: 'company_id_asc_uid_asc', spec: {company_id: 1, uid: 1}},
+        {name: 'email_text', spec: {email: 'text'}}, // Support for text indexes
     ]},
     {name: 'events', idx: [
-        {name: 'date_asc', spec: {date: 1}, options: {expireAfterSeconds: 5184000}}
-        {name: 'company_id_asc_user_id_asc', spec: {company_id: 1, user_id: 1}},
+        {name: 'date_asc', spec: {date: 1}, options: {expireAfterSeconds: 5184000}},
+        {name: 'location_2dsphere', spec: {coordinates: '2dsphere'}}, // Support for geo indexes
     ]},
     {name: 'companies', idx: [
         {name: 'uid_asc', spec: {uid: 1}},
@@ -331,8 +331,8 @@ if (!exists) await MyMongo.createIndex('sales_2023', 'date_asc', {date: 1});
 Note: There is no need to call connect prior to this operation as this is handled internally.
 
 
-### createIndex (collection:string, name:string, spec:{[key:string]:1|-1}, options:CreateIndexesOptions = {}):Promise<boolean>
-Create an index on a collection on the database, this method requires you to pass the name of the collection, name you wish to call the index and the index specification.
+### createIndex (collection:string, name:string, spec:{[key:string]:1|-1|string}, options:CreateIndexesOptions = {}):Promise<boolean>
+Create an index on a collection on the database. This method requires you to pass the name of the collection, the name you wish to call the index, and the index specification.
 
 Check out the following page to learn more about [indexing](https://www.mongodb.com/docs/manual/indexes/)
 
@@ -344,7 +344,20 @@ await MyMongo.createIndex('sales_2023', 'date_asc_total_desc', {date: 1, total: 
 ```
 
 ##### Specification
-In the valkyriestudios/mongo library an index specification is a KV map where each key is the name of the field you wish to index and its value being how you want the field to be ordered in the index (1 for ascending and -1 for descending).
+In the valkyriestudios/mongo library, an index specification is a KV map where each key is the name of the field you wish to index. The value indicates the index type or order:
+- `1` for ascending
+- `-1` for descending
+- `'text'` for text search indexes
+- `'2dsphere'` or `'2d'` for geospatial indexes
+- `'hashed'` for hashed indexes
+
+Example of a specialized index creation (Text & Geospatial):
+```typescript
+await MyMongo.createIndex('places', 'geo_text_idx', {
+    name: 'text',
+    location: '2dsphere'
+});
+```
 
 ##### CreateIndexesOptions
 The create indexes options allow for more advanced index usage such as partial filter expressions, TTL indexes, etc.
@@ -457,6 +470,33 @@ const users = await MyMongo.aggregate<User>('users', [
 ]);
 ```
 
+### withTransaction (fn: (session) => Promise<any>, options?: TransactionOptions): Promise<any>
+Run a sequence of operations within a MongoDB Transaction. This wrapper automatically handles session creation, committing the transaction on success, and aborting (rolling back) on error.
+
+**Crucial**: You must pass the provided `session` object to every database operation within the callback for it to be part of the transaction.
+
+Example usage:
+```typescript
+import MyMongo from './Mongo';
+
+await MyMongo.withTransaction(async (session) => {
+    // Step 1: Deduct from Alice
+    const debit = await MyMongo.query('accounts').updateOne(
+        { name: 'Alice', balance: { $gte: 50 } },
+        { $inc: { balance: -50 } },
+        { session } // <--- PASS SESSION
+    );
+
+    if (!debit) throw new Error('Insufficient funds');
+
+    // Step 2: Credit Bob
+    const credit = await MyMongo.query('accounts').updateOne(
+        { name: 'Bob' },
+        { $inc: { balance: 50 } },
+        { session } // <--- PASS SESSION
+    );
+});
+```
 
 ### close ():Promise<void>
 Closes the client pool
@@ -534,6 +574,34 @@ const activeUsers = await qUsers.count([
         type: {$exists: true},
     }},
 ]);
+```
+
+### distinct (key: string, filter?: Filter<Document>, options?: DistinctOptions):Promise<any[]>
+Retrieve a list of distinct values for a specific field across the collection. You can optionally provide a filter to narrow the scope of documents to consider.
+
+Example Usage:
+```typescript
+import MyMongo from './Mongo';
+
+// Get all unique categories for active products
+const categories = await MyMongo.query('products').distinct('category', { 
+    is_active: true 
+}); 
+// Result: ['Electronics', 'Home', 'Garden']
+```
+
+### exists (filter: Filter<Document>):Promise<boolean>
+Quickly check if at least one document matches the provided filter. This method is optimized to use `{ limit: 1 }` internally to avoid scanning more documents than necessary.
+
+Example Usage:
+```typescript
+import MyMongo from './Mongo';
+
+const isTaken = await MyMongo.query('users').exists({ email: 'john@example.com' });
+
+if (isTaken) {
+    throw new Error('Email already registered');
+}
 ```
 
 ### aggregate (pipeline:Document[], options:AggregateOptions = {}):Promise<Document[]>

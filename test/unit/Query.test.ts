@@ -330,6 +330,7 @@ describe('Query', () => {
             expect(out).toBe(false);
 
             // Restore
+            // eslint-disable-next-line require-atomic-updates
             instance.count = originalCount;
         });
 
@@ -341,6 +342,7 @@ describe('Query', () => {
 
             await expect(instance.exists({name: 'Error'})).rejects.toThrow('DB Error');
 
+            // eslint-disable-next-line require-atomic-updates
             instance.count = originalCount;
         });
     });
@@ -349,13 +351,15 @@ describe('Query', () => {
         let instance: Query;
 
         beforeEach(() => {
-            // FIX: We create a new DBMongo instance with debug: true
-            // This ensures that when distinct fails, it actually writes to the mock logger
+            /*
+             * FIX: We create a new DBMongo instance with debug: true
+             * This ensures that when distinct fails, it actually writes to the mock logger
+             */
             const debug_mongo = new DBMongo({
                 user: 'peter',
                 pass: 'pass',
                 db: 'main',
-                debug: true
+                debug: true,
             });
             instance = new Query(debug_mongo, 'mycollection');
         });
@@ -402,7 +406,7 @@ describe('Query', () => {
 
             expect(mock_col.calls).toContainEqual({
                 key: 'distinct',
-                params: { key: 'fruit', filter: {}, options: {} }
+                params: {key: 'fruit', filter: {}, options: {}},
             });
         });
     });

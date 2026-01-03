@@ -5,73 +5,74 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.8.0] - 2026-01-03
 ### Added
-- **feat**: Added `withTransaction` on the main MongoDb instance class, this allows you to wrap your logic within a transaction for ACID compliance
+**feat**: Added `withTransaction` to the main `Mongo` instance. This wrapper simplifies ACID-compliant operations by automatically handling session creation, committing, and aborting (rollback) on errors.
 ```typescript
 const db = new Mongo({ ... });
-
-// We define our query wrapper once
 const accounts = db.query('accounts');
 
 try {
-    // The wrapper handles session creation, commit, and rollback (abort) automatically
+    // Automatically handles commit/rollback based on promise resolution/rejection
     await db.withTransaction(async (session) => {
-        // Example Scenario: Transferring $50 from "Alice" to "Bob". If Bob's update fails, Alice's balance must roll back.
-        
         // Step 1: Deduct from Alice
         const debit = await accounts.updateOne(
             { name: 'Alice', balance: { $gte: 50 } },
             { $inc: { balance: -50 } },
-            { session }  // NOTE: we need to pass session in the options argument
+            { session } // ⚠️ Important: Pass session to every operation
         );
 
-        // Throwing an error aborts the transaction automatically
-        if (debit === false) throw new Error('Alice has insufficient funds or does not exist');
+        if (!debit) throw new Error('Alice has insufficient funds');
 
         // Step 2: Add to Bob
         const credit = await accounts.updateOne(
             { name: 'Bob' },
             { $inc: { balance: 50 } },
-            { session }  // NOTE: we need to pass session in the options argument
+            { session }
         );
 
-        if (credit === false) throw new Error('Could not find Bob');
-        
-        // If we reach here, the wrapper commits the transaction!
+        if (!credit) throw new Error('Bob not found');
     });
 } catch (err) {
-    console.error('Transfer failed, no data was changed:', err);
+    console.error('Transaction aborted, no data changed:', err);
 }
+```
+- **feat**: Added `exists(filter)` to the `Query` class. This is a high-performance utility that internally applies `limit: 1` to check for document existence without the overhead of fetching the document or counting all matches.
+```typescript
+const UserQuery = db.query<UserDocument>('users');
+
+// Efficiently check if an email is taken
+if (await UserQuery.exists({ email: 'jane@example.com' })) {
+    throw new Error('Email already in use');
+}
+```
+- **feat**: Added `distinct(key, filter)` to the `Query` class. Allows for retrieving unique values for a specific field across a collection, with optional filtering.
+```typescript
+const ProductQuery = db.query<ProductDocument>('products');
+
+// Get all unique categories for active products
+const categories = await ProductQuery.distinct('category', { isActive: true });
+console.log(categories); // ['Electronics', 'Clothing', 'Home']
 ```
 
 ### Improved
-- **feat**: Index creation now supports passing any of `[-1, 1, '2d', '2dsphere', 'text', 'geoHaystack', 'hashed']` instead of just `[-1, 1]`. This allows for the creation of specialized indexes.
+- **feat**: `createIndex` now supports specialized index types beyond standard ascending/descending. You can now use string literals for **Text, Hashed, and Geospatial indexes**. Supported types: 1 | -1 | 'text' | 'hashed' | '2dsphere' | '2d' | 'geoHaystack'
 ```typescript
-const db = new Mongo({ /* config */ });
+// Text Index (for search)
+await db.createIndex('products', 'text_search_idx', 
+    { title: 'text', description: 'text' }, 
+    { weights: { title: 10, description: 1 } }
+);
 
-// Example 1: Text Index
-// Allows you to do: { $text: { $search: "coffee" } }
-await db.createIndex('products', 'text_search_idx', {
-    title: 'text',
-    description: 'text'
-}, { 
-    weights: { title: 10, description: 1 } // Give title matches higher priority
+// Geospatial Index (for location queries)
+await db.createIndex('restaurants', 'geo_location_idx', { 
+    coordinates: '2dsphere' 
 });
 
-// Example 2: 2dsphere Index (Geospatial)
-// Allows you to do: { $near: { $geometry: ... } }
-await db.createIndex('restaurants', 'geo_location_idx', {
-    coordinates: '2dsphere'
-});
-
-// Example 3: Partial Filtered Index (Standard + Options)
+// Partial Filtered Index
 await db.createIndex('users', 'email_unique_idx', 
     { email: 1 }, 
-    { 
-        unique: true,
-        partialFilterExpression: { email: { $exists: true } } 
-    }
+    { unique: true, partialFilterExpression: { email: { $exists: true } } }
 );
 ```
 - **deps**: Upgrade @types/node to 24.10.4

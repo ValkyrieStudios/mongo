@@ -1,7 +1,7 @@
 /* eslint-disable max-len,max-lines */
 
 import Validator from '@valkyriestudios/validator';
-import {describe, it, beforeEach, afterEach, expect, vi} from 'vitest';
+import {describe, it, beforeEach, afterEach, expect} from 'vitest';
 import DBMongo, {MongoOptions} from '../../lib';
 import Query from '../../lib/Query';
 import CONSTANTS from '../constants';

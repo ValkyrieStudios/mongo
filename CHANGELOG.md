@@ -5,6 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- **feat**: Added `withTransaction` on the main MongoDb instance class, this allows you to wrap your logic within a transaction for ACID compliance
+```typescript
+const db = new Mongo({ ... });
+
+// We define our query wrapper once
+const accounts = db.query('accounts');
+
+try {
+    // The wrapper handles session creation, commit, and rollback (abort) automatically
+    await db.withTransaction(async (session) => {
+        // Example Scenario: Transferring $50 from "Alice" to "Bob". If Bob's update fails, Alice's balance must roll back.
+        
+        // Step 1: Deduct from Alice
+        const debit = await accounts.updateOne(
+            { name: 'Alice', balance: { $gte: 50 } },
+            { $inc: { balance: -50 } },
+            { session }  // NOTE: we need to pass session in the options argument
+        );
+
+        // Throwing an error aborts the transaction automatically
+        if (debit === false) throw new Error('Alice has insufficient funds or does not exist');
+
+        // Step 2: Add to Bob
+        const credit = await accounts.updateOne(
+            { name: 'Bob' },
+            { $inc: { balance: 50 } },
+            { session }  // NOTE: we need to pass session in the options argument
+        );
+
+        if (credit === false) throw new Error('Could not find Bob');
+        
+        // If we reach here, the wrapper commits the transaction!
+    });
+} catch (err) {
+    console.error('Transfer failed, no data was changed:', err);
+}
+```
+
+### Improved
+- **feat**: Index creation now supports passing any of `[-1, 1, '2d', '2dsphere', 'text', 'geoHaystack', 'hashed']` instead of just `[-1, 1]`. This allows for the creation of specialized indexes.
+```typescript
+const db = new Mongo({ /* config */ });
+
+// Example 1: Text Index
+// Allows you to do: { $text: { $search: "coffee" } }
+await db.createIndex('products', 'text_search_idx', {
+    title: 'text',
+    description: 'text'
+}, { 
+    weights: { title: 10, description: 1 } // Give title matches higher priority
+});
+
+// Example 2: 2dsphere Index (Geospatial)
+// Allows you to do: { $near: { $geometry: ... } }
+await db.createIndex('restaurants', 'geo_location_idx', {
+    coordinates: '2dsphere'
+});
+
+// Example 3: Partial Filtered Index (Standard + Options)
+await db.createIndex('users', 'email_unique_idx', 
+    { email: 1 }, 
+    { 
+        unique: true,
+        partialFilterExpression: { email: { $exists: true } } 
+    }
+);
+```
+
 ## [2.7.0] - 2025-09-30
 ### Improved
 - **deps**: Upgrade @types/node to 24.6.0

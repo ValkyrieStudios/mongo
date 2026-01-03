@@ -38,7 +38,7 @@ describe('Query', () => {
     const mock_col = new MockCollection('mycollection');
     const mockConsoleInfo = new MockFn();
     const mockConsoleError = new MockFn();
-    let mdb_instance;
+    let mdb_instance: DBMongo;
 
     beforeEach(() => {
         mockConsoleInfo.mock(console, 'info');
@@ -103,11 +103,11 @@ describe('Query', () => {
         it('Should throw when passed options that are not an object or undefined', async () => {
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.count({}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@count: Options should be an object');
                 expect(MockClient.calls).toEqual([]);
@@ -118,11 +118,11 @@ describe('Query', () => {
         it('Should throw when passed a filter that is not undefined an object or a valid pipeline', async () => {
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined || (Array.isArray(el) && el.length)) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.count(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@count: Invalid filter passed');
                 expect(MockClient.calls).toEqual([]);
@@ -135,11 +135,11 @@ describe('Query', () => {
                 const query = {date: {$gt: new Date()}};
                 MockClient.setDbMode('wrongret');
                 mock_col.setColUnorderedBop('throw');
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.count(query);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@count: Failed - Mongo@connect: Failed to create database instance');
                 expect(MockClient.calls).toEqual([
@@ -152,11 +152,11 @@ describe('Query', () => {
             it('Should throw when passed valid payload but internal count throws', async () => {
                 const query = {date: {$gt: new Date()}};
                 mock_col.setColCount('throw');
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.count(query);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@count: Failed - MockCollection@count: Oh No!');
                 expect(MockClient.calls).toEqual([
@@ -169,11 +169,11 @@ describe('Query', () => {
             it('Should throw when passed valid payload but internal count returns a wrong result', async () => {
                 const query = {date: {$gt: new Date()}};
                 mock_col.setColCount('wrongret');
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.count(query);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@count: Failed - Unexpected result');
                 expect(MockClient.calls).toEqual([
@@ -223,11 +223,11 @@ describe('Query', () => {
                 const query = [{$match: {date: {$gt: new Date()}}}];
                 MockClient.setDbMode('wrongret');
                 mock_col.setColUnorderedBop('throw');
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.count(query);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@count: Failed - Unexpected result');
                 expect(MockClient.calls).toEqual([
@@ -240,11 +240,11 @@ describe('Query', () => {
             it('Should throw when passed valid payload but internal aggregate throws', async () => {
                 const query = [{$match: {date: {$gt: new Date()}}}];
                 mock_col.setColAggregate('throw');
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.count(query);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@count: Failed - Unexpected result');
                 expect(MockClient.calls).toEqual([
@@ -260,11 +260,11 @@ describe('Query', () => {
             it('Should throw when passed valid payload but aggregate returns non-array result', async () => {
                 const query = [{$match: {date: {$gt: new Date()}}}];
                 mock_col.setColAggregate('wrongret');
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.count(query);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@count: Failed - Unexpected result');
                 expect(MockClient.calls).toEqual([
@@ -315,11 +315,11 @@ describe('Query', () => {
 
         it('Should throw when not passed a valid pipeline array', async () => {
             for (const el of CONSTANTS.NOT_ARRAY_WITH_EMPTY) {
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.aggregate(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@aggregrate: Pipeline should be an array with content');
                 expect(MockClient.calls).toEqual([]);
@@ -330,11 +330,11 @@ describe('Query', () => {
         it('Should throw when passed options that are not an object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.aggregate([{$match: {date: {$gt: new Date()}}}], el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@aggregate: Options should be an object');
                 expect(MockClient.calls).toEqual([]);
@@ -343,11 +343,11 @@ describe('Query', () => {
         });
 
         it('Should throw when passed a pipeline array that is empty after sanitization', async () => {
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.aggregate(CONSTANTS.NOT_OBJECT_WITH_EMPTY);
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MongoQuery@aggregate: Pipeline is empty after sanitization');
             expect(MockClient.calls).toEqual([]);
@@ -414,11 +414,11 @@ describe('Query', () => {
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
 
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.findOne(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@findOne: If passed, query should be an object');
                 expect(MockClient.calls).toEqual([]);
@@ -429,11 +429,11 @@ describe('Query', () => {
         it('Should throw when passed projection that is not an object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.findOne({date: {$gt: new Date()}}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@findOne: If passed, projection should be an object');
                 expect(MockClient.calls).toEqual([]);
@@ -444,11 +444,11 @@ describe('Query', () => {
         it('Should throw when passed a valid payload but we fail to acquire a connection', async () => {
             const query = {date: {$gt: new Date()}};
             MockClient.setDbMode('wrongret');
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.findOne(query);
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MongoQuery@findOne: Failed - Mongo@connect: Failed to create database instance');
             expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
@@ -458,11 +458,11 @@ describe('Query', () => {
         it('Should throw when passed valid payload but internal findOne throws', async () => {
             const query = {date: {$gt: new Date()}};
             mock_col.setColFindOne('throw');
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.findOne(query);
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MongoQuery@findOne: Failed - MockCollection@findOne: Oh No!');
             expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
@@ -508,11 +508,11 @@ describe('Query', () => {
 
         it('Should throw when not passed a valid query object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.removeOne(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@removeOne: Query should be an object with content');
                 expect(MockClient.calls).toEqual([]);
@@ -523,11 +523,11 @@ describe('Query', () => {
         it('Should throw when passed options that are not an object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.removeOne({date: {$gt: new Date()}}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@removeOne: Options should be an object');
                 expect(MockClient.calls).toEqual([]);
@@ -602,11 +602,11 @@ describe('Query', () => {
 
         it('Should throw when not passed a valid query object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.removeMany(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@removeMany: Query should be an object with content');
                 expect(MockClient.calls).toEqual([]);
@@ -617,11 +617,11 @@ describe('Query', () => {
         it('Should throw when passed options that are not an object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.removeMany({date: {$gt: new Date()}}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@removeMany: Options should be an object');
                 expect(MockClient.calls).toEqual([]);
@@ -696,11 +696,11 @@ describe('Query', () => {
 
         it('Should throw when not passed a valid query object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.updateOne(el, {$inc: {count: 1}});
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@updateOne: Query should be an object with content');
                 expect(MockClient.calls).toEqual([]);
@@ -711,11 +711,11 @@ describe('Query', () => {
         it('Should throw when not passed a valid data object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
                 if (Array.isArray(el)) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.updateOne({date: {$gt: new Date()}}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@updateOne: Data should be an object/array with content');
                 expect(MockClient.calls).toEqual([]);
@@ -724,11 +724,11 @@ describe('Query', () => {
 
             for (const el of CONSTANTS.NOT_ARRAY_WITH_EMPTY) {
                 if (Validator.rules.object(el)) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.updateOne({date: {$gt: new Date()}}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@updateOne: Data should be an object/array with content');
                 expect(MockClient.calls).toEqual([]);
@@ -739,11 +739,11 @@ describe('Query', () => {
         it('Should throw when passed options that are not an object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.updateOne({date: {$gt: new Date()}}, {$inc: {count: 1}}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@updateOne: Options should be an object');
                 expect(MockClient.calls).toEqual([]);
@@ -752,11 +752,11 @@ describe('Query', () => {
         });
 
         it('Should throw when passed an update pipeline that contains non-objects', async () => {
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.updateOne({date: {$gt: new Date()}}, CONSTANTS.NOT_OBJECT_WITH_EMPTY);
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MongoQuery@updateOne: Data pipeline is invalid');
             expect(MockClient.calls).toEqual([]);
@@ -830,11 +830,11 @@ describe('Query', () => {
 
         it('Should throw when not passed a valid query object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.updateMany(el, {$inc: {count: 1}});
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@updateMany: Query should be an object with content');
                 expect(MockClient.calls).toEqual([]);
@@ -845,11 +845,11 @@ describe('Query', () => {
         it('Should throw when not passed a valid data object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
                 if (Array.isArray(el)) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.updateMany({date: {$gt: new Date()}}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@updateMany: Data should be an object/array with content');
                 expect(MockClient.calls).toEqual([]);
@@ -858,11 +858,11 @@ describe('Query', () => {
 
             for (const el of CONSTANTS.NOT_ARRAY_WITH_EMPTY) {
                 if (Validator.rules.object(el)) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.updateMany({date: {$gt: new Date()}}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@updateMany: Data should be an object/array with content');
                 expect(MockClient.calls).toEqual([]);
@@ -873,11 +873,11 @@ describe('Query', () => {
         it('Should throw when passed options that are not an object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.updateMany({date: {$gt: new Date()}}, {$inc: {count: 1}}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@updateMany: Options should be an object');
                 expect(MockClient.calls).toEqual([]);
@@ -886,11 +886,11 @@ describe('Query', () => {
         });
 
         it('Should throw when passed an update pipeline that contains non-objects', async () => {
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.updateMany({date: {$gt: new Date()}}, CONSTANTS.NOT_OBJECT_WITH_EMPTY);
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MongoQuery@updateMany: Data pipeline is invalid');
             expect(MockClient.calls).toEqual([]);
@@ -965,11 +965,11 @@ describe('Query', () => {
         it('Should throw when not passed a valid document', async () => {
             for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
                 if (Array.isArray(el)) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.insertOne(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@insertOne: Document should be a non-empty object');
                 expect(MockClient.calls).toEqual([]);
@@ -980,11 +980,11 @@ describe('Query', () => {
         it('Should throw when passed options that are not an object', async () => {
             for (const el of CONSTANTS.NOT_OBJECT) {
                 if (el === undefined) continue;
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.insertOne({uid: 'bla', name: 'Peter'}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@insertOne: Options should be an object');
                 expect(MockClient.calls).toEqual([]);
@@ -1054,11 +1054,11 @@ describe('Query', () => {
 
         it('Should throw when not passed a valid documents array', async () => {
             for (const el of CONSTANTS.NOT_ARRAY_WITH_EMPTY) {
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.insertMany(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@insertMany: Documents should be an array with content');
                 expect(MockClient.calls).toEqual([]);
@@ -1067,11 +1067,11 @@ describe('Query', () => {
         });
 
         it('Should throw when passed a documents array that is empty after sanitization', async () => {
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.insertMany(CONSTANTS.NOT_OBJECT_WITH_EMPTY);
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MongoQuery@insertMany: Documents is empty after sanitization');
             expect(MockClient.calls).toEqual([]);
@@ -1196,11 +1196,11 @@ describe('Query', () => {
 
         it('Should throw when passed a non-function fn', async () => {
             for (const el of CONSTANTS.NOT_FUNCTION) {
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.bulkOps(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@bulkOps: Fn should be a function');
             }
@@ -1214,11 +1214,11 @@ describe('Query', () => {
             for (const el of CONSTANTS.NOT_BOOLEAN) {
                 if (el === undefined) continue;
 
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.bulkOps(operator => operator.insert({bla: true}), el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@bulkOps: Sorted should be a boolean');
             }

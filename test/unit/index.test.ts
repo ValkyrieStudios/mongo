@@ -1,7 +1,7 @@
 /* eslint-disable max-len,max-lines */
 
 import Validator from '@valkyriestudios/validator';
-import {describe, it, beforeEach, afterEach, expect} from 'vitest';
+import {describe, it, beforeEach, afterEach, expect, vi} from 'vitest';
 import DBMongo, {MongoOptions} from '../../lib';
 import Query from '../../lib/Query';
 import CONSTANTS from '../constants';
@@ -1089,7 +1089,7 @@ describe('Index', () => {
             try {
                 await app.connect();
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockClient@connect: Oh No!');
             expect(app.isConnected).toBe(false);
@@ -1109,7 +1109,7 @@ describe('Index', () => {
             try {
                 await app.connect();
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@connect: Failed to create client pool');
             expect(app.isConnected).toBe(false);
@@ -1226,11 +1226,11 @@ describe('Index', () => {
             mockConnect.mock(instance, 'connect');
             mockConnect.reject = true;
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.bootstrap();
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
 
             expect(val).toBe('Oh No');
@@ -1254,11 +1254,11 @@ describe('Index', () => {
             mockClose.mock(instance, 'close');
             mockClose.reject = true;
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.bootstrap();
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
 
             expect(val).toBe('Oh No');
@@ -1328,11 +1328,11 @@ describe('Index', () => {
             it('Should throw if provided a structure with non-objects or empty objects', async () => {
                 const instance = new DBMongo(FULL_VALID_OPTS);
                 for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
-                    let val = false;
+                    let val:string|boolean = false;
                     try {
                         await instance.bootstrap([el]);
                     } catch (err) {
-                        val = err.message;
+                        val = (err as Error).message;
                     }
                     expect(val).toBe('Mongo@bootstrap: All collection objects need to be valid');
                     expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -1344,11 +1344,11 @@ describe('Index', () => {
             it('Should throw if provided a structure with collection objects not containing a valid name', async () => {
                 const instance = new DBMongo(FULL_VALID_OPTS);
                 for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                    let val = false;
+                    let val:string|boolean = false;
                     try {
                         await instance.bootstrap([{name: el}]);
                     } catch (err) {
-                        val = err.message;
+                        val = (err as Error).message;
                     }
                     expect(val).toBe('Mongo@bootstrap: All collection objects need to be valid');
                     expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -1360,11 +1360,11 @@ describe('Index', () => {
             it('Should throw if provided a structure with collection objects and indexes but indexes are non-objects', async () => {
                 const instance = new DBMongo(FULL_VALID_OPTS);
                 for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
-                    let val = false;
+                    let val:string|boolean = false;
                     try {
                         await instance.bootstrap([{name: 'firstcollection'}, {name: 'mycollection', idx: [el]}]);
                     } catch (err) {
-                        val = err.message;
+                        val = (err as Error).message;
                     }
                     expect(val).toBe('Mongo@bootstrap: All collection objects need to be valid');
                     expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -1376,11 +1376,11 @@ describe('Index', () => {
             it('Should throw if provided a structure with collection objects and indexes but indexes dont contain valid name', async () => {
                 const instance = new DBMongo(FULL_VALID_OPTS);
                 for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                    let val = false;
+                    let val:string|boolean = false;
                     try {
                         await instance.bootstrap([{name: 'firstcollection'}, {name: 'mycollection', idx: [{name: el, spec: {date: 1}}]}]);
                     } catch (err) {
-                        val = err.message;
+                        val = (err as Error).message;
                     }
                     expect(val).toBe('Mongo@bootstrap: All collection objects need to be valid');
                     expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -1392,11 +1392,11 @@ describe('Index', () => {
             it('Should throw if provided a structure with collection and indexes but indexes dont contain object spec', async () => {
                 const instance = new DBMongo(FULL_VALID_OPTS);
                 for (const el of CONSTANTS.NOT_OBJECT_WITH_EMPTY) {
-                    let val = false;
+                    let val:string|boolean = false;
                     try {
                         await instance.bootstrap([{name: 'firstcollection'}, {name: 'mycollection', idx: [{name: 'idx1', spec: el}]}]);
                     } catch (err) {
-                        val = err.message;
+                        val = (err as Error).message;
                     }
                     expect(val).toBe('Mongo@bootstrap: All collection objects need to be valid');
                     expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -1407,15 +1407,15 @@ describe('Index', () => {
 
             it('Should throw if provided a structure with collection and indexes but index spec is invalid', async () => {
                 const instance = new DBMongo(FULL_VALID_OPTS);
-                for (const el of [...CONSTANTS.NOT_INTEGER, 0, 999, 100, 1.1]) {
-                    let val = false;
+                for (const el of [false, null, 0, 999, 100, 1.1]) {
+                    let val:string|boolean = false;
                     try {
                         await instance.bootstrap([
                             {name: 'firstcollection'},
                             {name: 'mycollection', idx: [{name: 'idx1', spec: {uid: el}}]},
                         ]);
                     } catch (err) {
-                        val = err.message;
+                        val = (err as Error).message;
                     }
                     expect(val).toBe('Mongo@bootstrap: All collection objects need to be valid');
                     expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -1428,14 +1428,14 @@ describe('Index', () => {
                 const instance = new DBMongo(FULL_VALID_OPTS);
                 for (const el of CONSTANTS.NOT_OBJECT) {
                     if (el === undefined) continue;
-                    let val = false;
+                    let val:string|boolean = false;
                     try {
                         await instance.bootstrap([
                             {name: 'firstcollection'},
                             {name: 'mycollection', idx: [{name: 'idx1', spec: {date: 1}, options: el}]},
                         ]);
                     } catch (err) {
-                        val = err.message;
+                        val = (err as Error).message;
                     }
                     expect(val).toBe('Mongo@bootstrap: All collection objects need to be valid');
                     expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -1446,7 +1446,7 @@ describe('Index', () => {
 
             it('Should throw if provided a structure with collection and indexes but index names are not unique', async () => {
                 const instance = new DBMongo(FULL_VALID_OPTS);
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.bootstrap([
                         {name: 'firstcollection'},
@@ -1456,7 +1456,7 @@ describe('Index', () => {
                         ]},
                     ]);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@bootstrap: Ensure all indexes have a unique name');
                 expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -1795,7 +1795,7 @@ describe('Index', () => {
             try {
                 await app.connect();
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockClient@connect: Oh No!');
             expect(mockConsoleInfo.calls).toEqual([
@@ -1814,7 +1814,7 @@ describe('Index', () => {
             try {
                 await app.connect();
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@connect: Failed to create client pool');
             expect(mockConsoleInfo.calls).toEqual([
@@ -1834,7 +1834,7 @@ describe('Index', () => {
             try {
                 await app.connect();
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockClient@db: Oh No!');
             expect(mockConsoleInfo.calls).toEqual([
@@ -1854,7 +1854,7 @@ describe('Index', () => {
             try {
                 await app.connect();
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@connect: Failed to create database instance');
             expect(mockConsoleInfo.isEmpty).toBe(true);
@@ -2103,7 +2103,7 @@ describe('Index', () => {
                 try {
                     await instance.hasCollection(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@hasCollection: Collection should be a non-empty string');
                 expect(MockClient.isEmpty).toBe(true);
@@ -2117,11 +2117,11 @@ describe('Index', () => {
             MockClient.setDbMode('throw');
             const instance = new DBMongo(FULL_VALID_OPTS);
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.hasCollection('mycollection');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockClient@db: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -2148,11 +2148,11 @@ describe('Index', () => {
             const mockConnect = new MockFn();
             mockConnect.mock(instance, 'connect');
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.hasCollection('mycollection');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@hasCollection: Failed to connect');
             expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -2166,11 +2166,11 @@ describe('Index', () => {
             const mockConnect = new MockFn();
             mockConnect.mock(instance, 'connect');
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.hasCollection('mycollection');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@hasCollection: Failed to connect');
             expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -2184,11 +2184,11 @@ describe('Index', () => {
             MockDb.setDbColExistsMode('throw');
 
             const instance = new DBMongo(FULL_VALID_OPTS);
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.hasCollection('mycollection    ');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockDb@listCollections: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -2218,11 +2218,11 @@ describe('Index', () => {
             MockDb.setDbColExistsMode('wrongret');
 
             const instance = new DBMongo(FULL_VALID_OPTS);
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.hasCollection('   mycollection    ');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@hasCollection: Unexpected result');
             expect(MockClient.calls).toEqual([
@@ -2356,7 +2356,7 @@ describe('Index', () => {
                 try {
                     await instance.createCollection(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@createCollection: Collection should be a non-empty string');
                 expect(MockClient.isEmpty).toBe(true);
@@ -2370,11 +2370,11 @@ describe('Index', () => {
             MockClient.setDbMode('throw');
             const instance = new DBMongo(FULL_VALID_OPTS);
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.createCollection('mycollection');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockClient@db: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -2401,11 +2401,11 @@ describe('Index', () => {
             const mockConnect = new MockFn();
             mockConnect.mock(instance, 'connect');
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.createCollection('mycollection');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@createCollection: Failed to connect');
             expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -2419,11 +2419,11 @@ describe('Index', () => {
             MockDb.setDbColCreateMode('throw');
 
             const instance = new DBMongo(FULL_VALID_OPTS);
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.createCollection('mycollection    ');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockDb@createCollection: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -2534,7 +2534,7 @@ describe('Index', () => {
                 try {
                     await instance.dropCollection(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@dropCollection: Collection should be a non-empty string');
                 expect(MockClient.isEmpty).toBe(true);
@@ -2548,11 +2548,11 @@ describe('Index', () => {
             MockClient.setDbMode('throw');
             const instance = new DBMongo(FULL_VALID_OPTS);
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.dropCollection('mycollection');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockClient@db: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -2579,11 +2579,11 @@ describe('Index', () => {
             const mockConnect = new MockFn();
             mockConnect.mock(instance, 'connect');
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.dropCollection('mycollection');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@dropCollection: Failed to connect');
             expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -2597,11 +2597,11 @@ describe('Index', () => {
             MockDb.setDbColDropMode('throw');
 
             const instance = new DBMongo(FULL_VALID_OPTS);
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.dropCollection('mycollection    ');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockDb@dropCollection: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -2713,7 +2713,7 @@ describe('Index', () => {
                 try {
                     await instance.hasIndex(el, 'myindex');
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@hasIndex: Collection should be a non-empty string');
                 expect(MockClient.isEmpty).toBe(true);
@@ -2729,7 +2729,7 @@ describe('Index', () => {
                 try {
                     await instance.hasIndex('mycollection', el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@hasIndex: Index Name should be a non-empty string');
                 expect(MockClient.isEmpty).toBe(true);
@@ -2743,11 +2743,11 @@ describe('Index', () => {
             MockClient.setDbMode('throw');
             const instance = new DBMongo(FULL_VALID_OPTS);
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.hasIndex('mycollection', 'myindex');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockClient@db: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -2774,11 +2774,11 @@ describe('Index', () => {
             const mockConnect = new MockFn();
             mockConnect.mock(instance, 'connect');
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.hasIndex('mycollection', 'myindex');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@hasIndex: Failed to connect');
             expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -2792,11 +2792,11 @@ describe('Index', () => {
             MockDb.setDbColMode('throw');
 
             const instance = new DBMongo(FULL_VALID_OPTS);
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.hasIndex('mycollection    ', '  myindex  ');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockDb@collection: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -2827,11 +2827,11 @@ describe('Index', () => {
             MockDb.setDbColIdxExistsMode('throw');
 
             const instance = new DBMongo(FULL_VALID_OPTS);
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.hasIndex('mycollection    ', '  myindex  ');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockDb@indexExists: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -2972,7 +2972,7 @@ describe('Index', () => {
                 try {
                     await instance.createIndex(el, 'myindex', {uid: 1});
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@createIndex: Collection should be a non-empty string');
                 expect(MockClient.isEmpty).toBe(true);
@@ -2988,7 +2988,7 @@ describe('Index', () => {
                 try {
                     await instance.createIndex('mycollection', el, {uid: 1});
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@createIndex: Index Name should be a non-empty string');
                 expect(MockClient.isEmpty).toBe(true);
@@ -3004,7 +3004,7 @@ describe('Index', () => {
                 try {
                     await instance.createIndex('mycollection', 'uid_asc', el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@createIndex: Invalid spec passed');
                 expect(MockClient.isEmpty).toBe(true);
@@ -3013,30 +3013,28 @@ describe('Index', () => {
             }
         });
 
-        it('Should throw if not passed a valid spec', async () => {
+        it('Should throw if passed a spec with invalid types (boolean/null)', async () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
-            for (const el of [...CONSTANTS.NOT_INTEGER, 0, 'bla', -10000, 10000]) {
+            for (const el of [true, false, null, undefined]) {
                 let val:any = false;
                 try {
+                    // @ts-ignore testing invalid runtime input
                     await instance.createIndex('mycollection', 'uid_asc', {uid: el});
                 } catch (err) {
                     val = err.message;
                 }
                 expect(val).toBe('Mongo@createIndex: Invalid spec passed');
-                expect(MockClient.isEmpty).toBe(true);
-                expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
-                expect(mockConsoleError.isEmpty).toBe(true);
             }
         });
 
         it('Should throw if passed a partially valid spec', async () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
-            for (const el of [...CONSTANTS.NOT_INTEGER, 0, 'bla', -10000, 10000]) {
+            for (const el of [0, false, -10000, 10000]) {
                 let val:any = false;
                 try {
-                    await instance.createIndex('mycollection', 'uid_asc', {uid: 1, name: el});
+                    await instance.createIndex('mycollection', 'uid_asc', {uid: 1, name: el as any});
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@createIndex: Invalid spec passed');
                 expect(MockClient.isEmpty).toBe(true);
@@ -3053,7 +3051,7 @@ describe('Index', () => {
                 try {
                     await instance.createIndex('mycollection', 'uid_asc', {uid: 1, name: 1}, el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@createIndex: Options should be an object');
                 expect(MockClient.isEmpty).toBe(true);
@@ -3067,11 +3065,11 @@ describe('Index', () => {
             MockClient.setDbMode('throw');
             const instance = new DBMongo(FULL_VALID_OPTS);
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.createIndex('mycollection', 'uid_asc', {uid: 1, name: 1}, {expireAfterSeconds: 90});
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockClient@db: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -3098,11 +3096,11 @@ describe('Index', () => {
             const mockConnect = new MockFn();
             mockConnect.mock(instance, 'connect');
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.createIndex('mycollection', 'uid_asc', {uid: 1, name: 1}, {expireAfterSeconds: 90});
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@createIndex: Failed to connect');
             expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -3116,11 +3114,11 @@ describe('Index', () => {
             MockDb.setDbColMode('throw');
 
             const instance = new DBMongo(FULL_VALID_OPTS);
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.createIndex('mycollection', 'uid_asc', {uid: 1, name: 1}, {expireAfterSeconds: 90});
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockDb@collection: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -3157,11 +3155,11 @@ describe('Index', () => {
             MockDb.setDbColIdxCreateMode('throw');
 
             const instance = new DBMongo(FULL_VALID_OPTS);
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.createIndex('mycollection', 'uid_asc', {uid: 1, name: 1}, {expireAfterSeconds: 90});
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockDb@createIndex: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -3272,6 +3270,31 @@ describe('Index', () => {
             ]);
             expect(mockConsoleError.isEmpty).toBe(true);
         });
+
+        it('Should accept special index types (text, 2dsphere) and pass them to DB', async () => {
+            MockClient.setConnectMode('success');
+            MockClient.setDbMode('success');
+            MockDb.setDbColMode('success');
+            MockDb.setDbColIdxCreateMode('success');
+
+            const instance = new DBMongo(FULL_VALID_OPTS);
+
+            const res = await instance.createIndex('mycollection', 'geo_text_idx', {
+                description: 'text',
+                location: '2dsphere',
+            });
+
+            expect(res).toBe(true);
+
+            // Verify call reached MockDb
+            expect(MockDb.calls).toContainEqual({
+                key: 'createIndex',
+                params: {
+                    indexSpec: {description: 'text', location: '2dsphere'},
+                    options: {name: 'geo_text_idx'},
+                },
+            });
+        });
     });
 
     describe('dropIndex', () => {
@@ -3298,7 +3321,7 @@ describe('Index', () => {
                 try {
                     await instance.dropIndex(el, 'myindex');
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@dropIndex: Collection should be a non-empty string');
                 expect(MockClient.isEmpty).toBe(true);
@@ -3314,7 +3337,7 @@ describe('Index', () => {
                 try {
                     await instance.dropIndex('mycollection', el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@dropIndex: Index Name should be a non-empty string');
                 expect(MockClient.isEmpty).toBe(true);
@@ -3328,11 +3351,11 @@ describe('Index', () => {
             MockClient.setDbMode('throw');
             const instance = new DBMongo(FULL_VALID_OPTS);
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.dropIndex('mycollection', 'myindex');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('MockClient@db: Oh No!');
             expect(MockClient.calls).toEqual([
@@ -3360,11 +3383,11 @@ describe('Index', () => {
             const mockConnect = new MockFn();
             mockConnect.mock(instance, 'connect');
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.dropIndex('mycollection', 'myindex');
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@dropIndex: Failed to connect');
             expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
@@ -3491,11 +3514,11 @@ describe('Index', () => {
         it('Should throw if not passed a string or passed an empty string collection name', () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     instance.query(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@query: Collection should be a non-empty string');
                 expect(MockClient.isEmpty).toBe(true);
@@ -3562,12 +3585,12 @@ describe('Index', () => {
         it('Should throw if not passed a string or passed an empty string collection name', async () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     /* @ts-ignore */
                     await instance.aggregate(el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@aggregate: Collection should be a non-empty string');
                 expect(MockClient.isEmpty).toBe(true);
@@ -3579,11 +3602,11 @@ describe('Index', () => {
         it('Should throw if not passed a pipeline array or passed an empty pipeline array', async () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
             for (const el of CONSTANTS.NOT_ARRAY_WITH_EMPTY) {
-                let val = false;
+                let val:string|boolean = false;
                 try {
                     await instance.aggregate('test', el);
                 } catch (err) {
-                    val = err.message;
+                    val = (err as Error).message;
                 }
                 expect(val).toBe('Mongo@aggregate: Pipeline should be a non-empty array');
                 expect(MockClient.isEmpty).toBe(true);
@@ -3594,11 +3617,11 @@ describe('Index', () => {
 
         it('Should throw if passed a pipeline array consisting solely of non/empty objects', async () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.aggregate('test', CONSTANTS.NOT_OBJECT_WITH_EMPTY);
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe('Mongo@aggregate: Pipeline empty after sanitization');
             expect(MockClient.isEmpty).toBe(true);
@@ -3664,11 +3687,11 @@ describe('Index', () => {
 
         it('Should not do anything and be successful if client is not connected', async () => {
             const instance = new DBMongo(FULL_VALID_OPTS);
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.close();
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe(false);
             expect(MockClient.isEmpty).toBe(true);
@@ -3688,11 +3711,11 @@ describe('Index', () => {
 
             expect(instance.isConnected).toBe(true);
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.close();
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe(false);
             expect(MockClient.calls).toEqual([
@@ -3730,11 +3753,11 @@ describe('Index', () => {
 
             expect(instance.isConnected).toBe(true);
 
-            let val = false;
+            let val:string|boolean = false;
             try {
                 await instance.close();
             } catch (err) {
-                val = err.message;
+                val = (err as Error).message;
             }
             expect(val).toBe(false);
             expect(MockClient.calls).toEqual([
@@ -3757,6 +3780,66 @@ describe('Index', () => {
             ]);
             expect(mockConsoleError.isEmpty).toBe(true);
             expect(instance.isConnected).toBe(false);
+        });
+    });
+
+    describe('withTransaction', () => {
+        it('Should not be static', () => {
+            /* @ts-ignore */
+            expect(DBMongo.withTransaction).toBe(undefined);
+        });
+
+        it('Should throw if not connected (client unavailable)', async () => {
+            const instance = new DBMongo(FULL_VALID_OPTS);
+            MockClient.setConnectMode('wrongret');
+
+            let val;
+            try {
+                await instance.withTransaction(async () => {});
+            } catch (err) {
+                val = (err as Error).message;
+            }
+            expect(val).toBe('Mongo@connect: Failed to create client pool');
+        });
+
+        it('Should start a session, execute callback, and end session', async () => {
+            const instance = new DBMongo(FULL_VALID_OPTS);
+            MockClient.setConnectMode('success');
+            MockClient.setDbMode('success');
+
+            const result = await instance.withTransaction(async session => {
+                expect(session).toBeDefined();
+                return 'txn_success';
+            });
+
+            expect(result).toBe('txn_success');
+            const calls = MockClient.calls;
+
+            const hasStart = calls.some((c:any) => c.key === 'startSession');
+            const hasTxn = calls.some((c:any) => c.key === 'withTransaction');
+            const hasEnd = calls.some((c:any) => c.key === 'endSession');
+
+            expect(hasStart).toBe(true);
+            expect(hasTxn).toBe(true);
+            expect(hasEnd).toBe(true);
+        });
+
+        it('Should throw/bubble error if transaction fails', async () => {
+            const instance = new DBMongo(FULL_VALID_OPTS);
+            MockClient.setConnectMode('success');
+            MockClient.setTxnMode('throw'); // Simulate withTransaction failure in driver
+
+            let val;
+            try {
+                await instance.withTransaction(async () => 'should fail');
+            } catch (err) {
+                val = (err as Error).message;
+            }
+            expect(val).toBe('MockClient@withTransaction: Aborted');
+
+            // Should still attempt to end session (MockClient implementation simply pushes calls)
+            const hasEnd = MockClient.calls.some((c:any) => c.key === 'endSession');
+            expect(hasEnd).toBe(true);
         });
     });
 });

@@ -12,6 +12,9 @@ import {
     type CreateIndexesOptions,
     type Document,
     type AuthMechanismProperties,
+    type IndexDirection,
+    type ClientSession,
+    type TransactionOptions,
 } from 'mongodb';
 
 import {
@@ -150,12 +153,12 @@ type CollectionStructure = {
 const CustomValidator = Validator.extend({
     mongo_enum_protocols: Object.values(Protocols),
     mongo_enum_read_pref: Object.values(ReadPreferences),
-    mongo_enum_index_val: [-1, 1],
+    mongo_index_val: [-1, 1, '2d', '2dsphere', 'text', 'geoHaystack', 'hashed'],
     mongo_debug_level: Object.values(LogLevel),
     mongo_uri: /^(mongodb(?:\+srv)?):\/\/(?:([^:@]+)(?::([^@]+))?@)?([A-Za-z0-9.-]+(?::\d+)?(?:,[A-Za-z0-9.-]+(?::\d+)?)*)(?:\/([^/?]+)?)?(?:\?(.*))?$/, /* eslint-disable-line max-len */
     mongo_collection_structure_index: {
         name: 'string_ne|min:1|max:128',
-        spec: '{min:1}mongo_enum_index_val',
+        spec: '{min:1}mongo_index_val',
         options: '?object_ne',
     },
 });
@@ -670,7 +673,7 @@ class Mongo {
     async createIndex (
         collection:string,
         name:string,
-        spec:{[key:string]:1|-1},
+        spec:{[key:string]: IndexDirection},
         options:CreateIndexesOptions = {}
     ):Promise<boolean> {
         if (!isNeString(collection)) throw new Error('Mongo@createIndex: Collection should be a non-empty string');
@@ -678,7 +681,7 @@ class Mongo {
 
         if (
             !isNeObject(spec) ||
-            !Object.values(spec).every(el => el === 1 || el === -1)
+            !Object.values(spec).every(el => CustomValidator.rules.mongo_index_val(el))
         ) throw new Error('Mongo@createIndex: Invalid spec passed');
 
         if (!isObject(options)) throw new Error('Mongo@createIndex: Options should be an object');
@@ -791,6 +794,24 @@ class Mongo {
         if (!isNeArray(s_pipe)) throw new Error('Mongo@aggregate: Pipeline empty after sanitization');
 
         return new Query<T>(this, collection.trim()).aggregate<T>(s_pipe);
+    }
+
+    /**
+     * Run a function within a transaction
+     */
+    async withTransaction<T> (
+        fn: (session: ClientSession) => Promise<T>,
+        options: TransactionOptions = {}
+    ): Promise<T> {
+        await this.connect();
+        if (!this.#mongo_client) throw new Error('Not connected');
+
+        const session = this.#mongo_client.startSession();
+        try {
+            return await session.withTransaction(fn, options);
+        } finally {
+            await session.endSession();
+        }
     }
 
     /**

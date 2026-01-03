@@ -52,7 +52,7 @@ export default class MockDb extends Db {
         return {toArray: async () => ['bla']};
     }
 
-    async dropCollection (name):Promise<boolean> {
+    async dropCollection (name: string):Promise<boolean> {
         calls.push({key: 'dropCollection', params: {name}});
 
         if (db_col_drop === 'throw') throw new Error('MockDb@dropCollection: Oh No!');
@@ -86,7 +86,7 @@ export default class MockDb extends Db {
         return db_col === 'mock' ? mock_col || new MockCollection(name) : this;
     }
 
-    async indexExists (name):Promise<boolean> {
+    async indexExists (name: string):Promise<boolean> {
         calls.push({key: 'indexExists', params: {name}});
 
         if (db_col_idx_exists === 'throw') throw new Error('MockDb@indexExists: Oh No!');
@@ -96,7 +96,7 @@ export default class MockDb extends Db {
         return true;
     }
 
-    async dropIndex (name):Promise<boolean> {
+    async dropIndex (name: string):Promise<boolean> {
         calls.push({key: 'dropIndex', params: {name}});
 
         if (db_col_idx_drop === 'throw') throw new Error('MockDb@dropIndex: Oh No!');
@@ -120,7 +120,7 @@ export default class MockDb extends Db {
         /* @ts-ignore */
         if (db_col_idx_create === 'wrongret') return false;
 
-        return options.name;
+        return options.name as string;
     }
 
     static get calls ():unknown[] {

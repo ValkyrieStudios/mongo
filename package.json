@@ -56,7 +56,7 @@
     "dependencies": {
         "@valkyriestudios/utils": "^12.48.0",
         "@valkyriestudios/validator": "^10.11.0",
-        "mongodb": "^6.21.0"
+        "mongodb": "^7.0.0"
     },
     "devDependencies": {
         "@types/node": "^24.10.4",

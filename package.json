@@ -59,7 +59,7 @@
         "mongodb": "^6.21.0"
     },
     "devDependencies": {
-        "@types/node": "^24.10.4",
+        "@types/node": "^25.0.6",
         "@vitest/coverage-v8": "^4.0.16",
         "esbuild-register": "^3.6.0",
         "eslint": "^9.39.2",

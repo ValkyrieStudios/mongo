@@ -30,6 +30,7 @@ vi.mock('mongodb', async importOriginal => {
         }
 
         async connect () {
+            // eslint-disable-next-line no-shadow
             const MockClient = (await import('../MockClient')).default;
             this.delegate = new MockClient(this.uri, this.opts);
             return this.delegate.connect();

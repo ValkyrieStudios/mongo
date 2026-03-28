@@ -12,7 +12,7 @@ Simplified mongo wrapper library for JS backends
 ## Introduction
 This library offers a simple approach to working with MongoDB instances, offering both direct connectivity as well as the ability to connect to Atlas clusters through the mongodb+srv protocol.
 
-Among other defaults, it works with connection pooling and applies zlib compression for fast optimized queries. Behind the scenes, it works with the latest version of the native MongoDB driver, and though it does not open up all functionalities this offers, it tries to ensure most real-world scenarios could be handled.
+Among other defaults, it works with connection pooling and applies zlib compression for fast optimized queries. Behind the scenes, it works with the latest v7+ version of the native MongoDB Node.js driver (utilizing modern, non-blocking index creation and dynamic connection pooling) and tries to ensure most real-world scenarios are handled out of the box.
 
 If there's anything missing in this library that you deem a necessity, feel free to open a pull request or shoot us a suggestion ;)
 
@@ -71,7 +71,11 @@ The following is the list of options available for configuration as well as thei
 | **debug** | Internal debug option for @valkyriestudios/mongo, logging will be done on system console if enabled | | `false` |
 | **debug_levels** | Which log levels should be logged and which should be ignored. Available options are `info`, `warn`, `debug`, `error` | | `['info', 'warn', 'error']` |
 | **logger** | A custom log function where logs will be sent to if debug is turned on. Read more about logging below | | |
-| **pool_size** | The size of the internal connection pool, for safety reasons this will be validated as **an integer between 1 and 100** | | `5` |
+| **pool_size** | The max size of the internal connection pool, for safety reasons this will be validated as **an integer between 1 and 250** | | `5` |
+| **min_pool_size** | The minimum number of connections the pool will maintain. Set higher to pre-warm connections for high-throughput apps | | `1` |
+| **server_selection_timeout_ms** | The "fail-fast" timeout in milliseconds before throwing if the MongoDB cluster is unreachable | | `5000` |
+| **max_idle_time_ms** | Time in milliseconds a connection can remain idle before being recycled (prevents silent firewall drops) | | `10000` |
+| **app_name** | The name of the application, sent to MongoDB for cluster observability and `mongostat` tracking | | `'ValkyrieApp'` |
 | **host** | Host URL to connect to | | `127.0.0.1:27017` |
 | **user** | Name of the user to connect with | yes | |
 | **pass** | Password of the user connecting with | yes | |
@@ -107,7 +111,11 @@ The following is the list of options available for configuration as well as thei
 | **debug** | Internal debug option for @valkyriestudios/mongo, logging will be done on system console if enabled | | `false` |
 | **debug_levels** | Which log levels should be logged and which should be ignored. Available options are `info`, `warn`, `debug`, `error` | | `['info', 'warn', 'error']` |
 | **logger** | A custom log function where logs will be sent to if debug is turned on. Read more about logging below | | |
-| **pool_size** | The size of the internal connection pool, for safety reasons this will be validated as **an integer between 1 and 100** | | `5` |
+| **pool_size** | The max size of the internal connection pool, for safety reasons this will be validated as **an integer between 1 and 250** | | `5` |
+| **min_pool_size** | The minimum number of connections the pool will maintain. Set higher to pre-warm connections for high-throughput apps | | `1` |
+| **server_selection_timeout_ms** | The "fail-fast" timeout in milliseconds before throwing if the MongoDB cluster is unreachable | | `5000` |
+| **max_idle_time_ms** | Time in milliseconds a connection can remain idle before being recycled (prevents silent firewall drops) | | `10000` |
+| **app_name** | The name of the application, sent to MongoDB for cluster observability and `mongostat` tracking | | `'ValkyrieApp'` |
 | **uri** | Uri Connection string | yes | `mongodb+srv://peter:rootroot@myfancyHost.com/myDb` |
 | **auth_mechanism_properties** | Auth Mechanism Properties (for example see: https://www.mongodb.com/community/forums/t/mongodb-nodejs-driver-6-15-0-released/315891) | | `{AWS_CREDENTIAL_PROVIDER: fromNodeProviderChain()}` |
 | **db** | Database to use for the connection pool (only required IF the connection string does not select DB) | | |
@@ -122,7 +130,9 @@ Below is an example of such a configuration object for an atlas cluster hosted a
 **Take note: In real-world scenarios the values here should never be part of a codebase but be provided through the environment**
 ```typescript
 {
+    app_name: 'AuthMicroservice',
     pool_size: 50,
+    min_pool_size: 10,
     uri: 'mongodb+srv://root:rootroot@dummyatlas.example.mongodb.net/main',
 }
 ```
@@ -130,7 +140,9 @@ Below is an example of such a configuration object for an atlas cluster hosted a
 **Take note:** The `db` option is not required for uri connections UNLESS it is not part of the connection string, if not part it should be provided separately
 ```typescript
 {
+    app_name: 'AuthMicroservice',
     pool_size: 50,
+    min_pool_size: 10,
     uri: 'mongodb+srv://root:rootroot@dummyatlas.example.mongodb.net',
     db: 'main',
 }
@@ -655,7 +667,14 @@ Example usage with projection:
 ```typescript
 import MyMongo from './Mongo';
 
-await MyMongo.query('users').findOne({uid: {$eq: 'd8d61fa6-61e9-4794-84d4-f3280b413dfc'}}, {_id: 0, name: 1, email: 1});
+// By explicitly passing the generic, you get perfect intellisense for your projected data!
+const result = await MyMongo.query<User>('users').findOne<Pick<User, 'name' | 'email'>>(
+    {uid: {$eq: 'd8d61fa6-61e9-4794-84d4-f3280b413dfc'}}, 
+    {_id: 0, name: 1, email: 1}
+);
+
+console.log(result.name); // Typed as string
+console.log(result.age);  // TypeScript Error: Property 'age' does not exist on type
 ```
 
 Note: When not passing a query this function will simply return the first document it finds

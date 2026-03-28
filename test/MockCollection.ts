@@ -7,6 +7,7 @@ import {
     DeleteResult,
     Document,
     Filter,
+    InsertManyResult,
     InsertOneOptions,
     InsertOneResult,
     UpdateFilter,
@@ -45,6 +46,8 @@ export default class MockCollection extends Collection {
     #col_unordered_bop:MockMode = 'success';
 
     #col_ordered_bop:MockMode = 'success';
+
+    #col_insert_many: MockMode = 'success';
 
     constructor (col:string) {
         /* eslint-disable-next-line */
@@ -161,6 +164,23 @@ export default class MockCollection extends Collection {
         return {acknowledged: true, insertedId: 10} as InsertOneResult;
     }
 
+    async insertMany (docs: Document[], options?: unknown): Promise<InsertManyResult> {
+        this.#calls.push({key: 'insertMany', params: {docs, options}});
+        if (this.#col_insert_many === 'throw') throw new Error('MockCollection@insertMany: Oh No!');
+
+        /* eslint-disable-next-line */
+        /* @ts-ignore */
+        if (this.#col_insert_many === 'wrongret') return 'hello';
+
+        /* eslint-disable-next-line */
+        /* @ts-ignore */
+        if (this.#col_insert_many === 'unack') return {acknowledged: false, insertedCount: 0};
+
+        /* eslint-disable-next-line */
+        /* @ts-ignore */
+        return {acknowledged: true, insertedCount: docs.length};
+    }
+
     async updateMany (query:Filter<Document>, data:UpdateFilter<Document>, options:UpdateOptions):Promise<UpdateResult> {
         this.#calls.push({key: 'updateMany', params: {query, data, options}});
 
@@ -233,6 +253,10 @@ export default class MockCollection extends Collection {
 
     setColInsertOne (mode:MockMode = 'success') {
         this.#col_insert_one = mode;
+    }
+
+    setColInsertMany (mode:MockMode = 'success') {
+        this.#col_insert_many = mode;
     }
 
     setColFindOne (mode:MockMode = 'success') {

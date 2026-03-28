@@ -71,7 +71,7 @@ class Query <TModel extends Document = Document> {
                 result = await this.aggregate([
                     ...filter,
                     {$count: 'count'},
-                ], options) as (TModel & {count:number})[];
+                ], options) as {count:number}[];
             } else {
                 /* Connect */
                 const db = await this.#instance.connect();
@@ -115,7 +115,7 @@ class Query <TModel extends Document = Document> {
      * @param {AggregateOptions} options - (default={}) Aggregation options
      * @returns {Promise<Document[]>} Array of documents - Null is returned when aggregation fails
      */
-    async aggregate <T extends Document> (pipeline:Document[], options:AggregateOptions = {}):Promise<T[]> {
+    async aggregate <T = Document> (pipeline:Document[], options:AggregateOptions = {}):Promise<T[]> {
         if (!isNeArray(pipeline)) throw new Error('MongoQuery@aggregrate: Pipeline should be an array with content');
         if (!isObject(options)) throw new Error('MongoQuery@aggregate: Options should be an object');
 
@@ -178,7 +178,7 @@ class Query <TModel extends Document = Document> {
                 msg: 'Distinct run',
                 data: {key, filter},
             });
-            return result as Flatten<TModel[Key][]>;
+            return result as Flatten<TModel[Key]>[];
         } catch (err) {
             this.#log({
                 level: LogLevel.ERROR,
@@ -200,7 +200,7 @@ class Query <TModel extends Document = Document> {
      * @returns {Promise<Document|null>} The found document or null
      * @throws {Error} when provided query or connection fails
      */
-    async findOne <T extends TModel> (query?:Filter<TModel>, projection?:Document):Promise<T|null> {
+    async findOne <T = TModel> (query?:Filter<TModel>, projection?:Document):Promise<T|null> {
         if (
             query !== undefined &&
             !isObject(query)
@@ -439,12 +439,10 @@ class Query <TModel extends Document = Document> {
         if (!isNeArray(normalized_documents)) throw new Error('MongoQuery@insertMany: Documents is empty after sanitization');
 
         try {
-            const result = await this.bulkOps(operator => {
-                for (let i = 0; i < normalized_documents.length; i++) {
-                    operator.insert(normalized_documents[i]);
-                }
-            }, false);
-            if (result?.insertedCount !== normalized_documents.length) throw new Error('Not all documents were inserted');
+            const db = await this.#instance.connect();
+            const result = await db.collection(this.#col).insertMany(normalized_documents);
+
+            if (result.insertedCount !== normalized_documents.length) throw new Error('Not all documents were inserted');
 
             this.#log({
                 level: LogLevel.DEBUG,

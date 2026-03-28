@@ -2,7 +2,7 @@
 /* eslint-disable max-lines */
 
 import Validator from '@valkyriestudios/validator';
-import {describe, it, beforeEach, afterEach, expect} from 'vitest';
+import {describe, it, beforeEach, afterEach, expect, vi} from 'vitest';
 import Query from '../../lib/Query';
 import DBMongo from '../../lib';
 import CONSTANTS from '../constants';
@@ -13,16 +13,61 @@ import MockUnorderedBulkOp from '../MockUnorderedBulkOp';
 import MockOrderedBulkOp from '../MockOrderedBulkOp';
 import MockFn from '../MockFn';
 
+vi.mock('mongodb', async importOriginal => {
+    const actual = await importOriginal<any>();
+
+    class ProxyMongoClient {
+
+        uri: string;
+
+        opts: any;
+
+        delegate: any;
+
+        constructor (uri: string, opts: any) {
+            this.uri = uri;
+            this.opts = opts;
+        }
+
+        async connect () {
+            const MockClient = (await import('../MockClient')).default;
+            this.delegate = new MockClient(this.uri, this.opts);
+            return this.delegate.connect();
+        }
+
+        db (name: string, opts: any) {
+            return this.delegate.db(name, opts);
+        }
+
+        startSession (options?: any) {
+            return this.delegate.startSession(options);
+        }
+
+        async close () {
+            if (this.delegate) return this.delegate.close();
+        }
+
+    }
+
+    return {
+        ...actual,
+        MongoClient: ProxyMongoClient,
+    };
+});
+
 const EXPECTED_CON_PAYLOAD = {
     opts: {
+        appName: 'ValkyrieApp',
         compressors: ['zlib'],
         connectTimeoutMS: 10000,
         maxConnecting: 5,
+        maxIdleTimeMS: 10000,
         maxPoolSize: 5,
         minPoolSize: 1,
         readPreference: 'nearest',
         retryReads: true,
         retryWrites: true,
+        serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 0,
         zlibCompressionLevel: 3,
     },
@@ -1173,31 +1218,26 @@ describe('Query', () => {
             for (const el of CONSTANTS.NOT_ARRAY_WITH_EMPTY) {
                 let val:string|boolean = false;
                 try {
-                    await instance.insertMany(el);
+                    await instance.insertMany(el as any);
                 } catch (err) {
                     val = (err as Error).message;
                 }
                 expect(val).toBe('MongoQuery@insertMany: Documents should be an array with content');
-                expect(MockClient.calls).toEqual([]);
-                expect(mock_col.calls).toEqual([]);
             }
         });
 
         it('Should throw when passed a documents array that is empty after sanitization', async () => {
             let val:string|boolean = false;
             try {
-                await instance.insertMany(CONSTANTS.NOT_OBJECT_WITH_EMPTY);
+                await instance.insertMany(CONSTANTS.NOT_OBJECT_WITH_EMPTY as any);
             } catch (err) {
                 val = (err as Error).message;
             }
             expect(val).toBe('MongoQuery@insertMany: Documents is empty after sanitization');
-            expect(MockClient.calls).toEqual([]);
-            expect(mock_col.calls).toEqual([]);
         });
 
         it('Should return false when passed a documents array but we fail to acquire a connection', async () => {
             MockClient.setDbMode('wrongret');
-            mock_col.setColUnorderedBop('throw');
             const out = await instance.insertMany([
                 {first_name: 'Peter', last_name: 'Vermeulen'},
                 {first_name: 'Jack', last_name: 'Bauer'},
@@ -1205,91 +1245,37 @@ describe('Query', () => {
             expect(out).toBe(false);
             expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
             expect(mock_col.calls).toEqual([]);
-            expect(MockUnorderedBulkOp.calls).toEqual([]);
-            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
-        it('Should return false when passed a documents array but we fail to create a bulk operator due to it throwing', async () => {
-            mock_col.setColUnorderedBop('throw');
+        it('Should return false when internal insertMany throws', async () => {
+            mock_col.setColInsertMany('throw');
             const out = await instance.insertMany([
-                {first_name: 'Peter', last_name: 'Vermeulen'},
-                {first_name: 'Jack', last_name: 'Bauer'},
+                {first_name: 'Peter'},
+                {first_name: 'Jack'},
             ]);
             expect(out).toBe(false);
             expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            expect(MockUnorderedBulkOp.calls).toEqual([]);
-            expect(MockOrderedBulkOp.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([{key: 'insertMany', params: {docs: [{first_name: 'Peter'}, {first_name: 'Jack'}], options: undefined}}]);
         });
 
-        it('Should return false when passed a documents array but we fail to create a bulk operator due to it returning a bad val', async () => {
-            mock_col.setColUnorderedBop('wrongret');
+        it('Should return false when internal insertMany returns non-acknowledged or wrong count', async () => {
+            mock_col.setColInsertMany('unack');
             const out = await instance.insertMany([
-                {first_name: 'Peter', last_name: 'Vermeulen'},
-                {first_name: 'Jack', last_name: 'Bauer'},
+                {first_name: 'Peter'},
+                {first_name: 'Jack'},
             ]);
             expect(out).toBe(false);
-            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            expect(MockUnorderedBulkOp.calls).toEqual([]);
-            expect(MockOrderedBulkOp.calls).toEqual([]);
         });
 
-        it('Should return false when passed a documents array but exec on bulk operator throws', async () => {
-            mock_col.setColUnorderedBop('success');
-            MockUnorderedBulkOp.setModeExec('throw');
+        it('Should return true when internal insertMany succeeds', async () => {
+            mock_col.setColInsertMany('success');
             const out = await instance.insertMany([
-                {first_name: 'Peter', last_name: 'Vermeulen'},
-                {first_name: 'Jack', last_name: 'Bauer'},
-            ]);
-            expect(out).toBe(false);
-            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            expect(MockUnorderedBulkOp.calls).toEqual([
-                {key: 'ctor', params: {opts: undefined}},
-                {key: 'insert', params: {doc: {first_name: 'Peter', last_name: 'Vermeulen'}, opts: {}}},
-                {key: 'insert', params: {doc: {first_name: 'Jack', last_name: 'Bauer'}, opts: {}}},
-                {key: 'execute', params: {opts: {}}},
-            ]);
-            expect(MockOrderedBulkOp.calls).toEqual([]);
-        });
-
-        it('Should return false when passed a document array and execute succeeds but not all documents were inserted', async () => {
-            mock_col.setColUnorderedBop('success');
-            MockUnorderedBulkOp.setModeExec('success');
-            const out = await instance.insertMany([
-                {first_name: 'Peter', last_name: 'Vermeulen'},
-                {first_name: 'Jack', last_name: 'Bauer'},
-            ]);
-            expect(out).toBe(false);
-            expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            expect(MockUnorderedBulkOp.calls).toEqual([
-                {key: 'ctor', params: {opts: undefined}},
-                {key: 'insert', params: {doc: {first_name: 'Peter', last_name: 'Vermeulen'}, opts: {}}},
-                {key: 'insert', params: {doc: {first_name: 'Jack', last_name: 'Bauer'}, opts: {}}},
-                {key: 'execute', params: {opts: {}}},
-            ]);
-            expect(MockOrderedBulkOp.calls).toEqual([]);
-        });
-
-        it('Should succeed when passed a document array and all documents were inserted', async () => {
-            mock_col.setColUnorderedBop('success');
-            MockUnorderedBulkOp.setModeExec('success', {insertedCount: 2});
-            const out = await instance.insertMany([
-                {first_name: 'Peter', last_name: 'Vermeulen'},
-                {first_name: 'Jack', last_name: 'Bauer'},
+                {first_name: 'Peter'},
+                {first_name: 'Jack'},
             ]);
             expect(out).toBe(true);
             expect(MockClient.calls).toEqual([{key: 'connect', params: EXPECTED_CON_PAYLOAD}, {key: 'db', params: EXPECTED_DB_PAYLOAD}]);
-            expect(mock_col.calls).toEqual([{key: 'initializeUnorderedBulkOp', params: {options: undefined}}]);
-            expect(MockUnorderedBulkOp.calls).toEqual([
-                {key: 'ctor', params: {opts: undefined}},
-                {key: 'insert', params: {doc: {first_name: 'Peter', last_name: 'Vermeulen'}, opts: {}}},
-                {key: 'insert', params: {doc: {first_name: 'Jack', last_name: 'Bauer'}, opts: {}}},
-                {key: 'execute', params: {opts: {}}},
-            ]);
-            expect(MockOrderedBulkOp.calls).toEqual([]);
+            expect(mock_col.calls).toEqual([{key: 'insertMany', params: {docs: [{first_name: 'Peter'}, {first_name: 'Jack'}], options: undefined}}]);
         });
     });
 

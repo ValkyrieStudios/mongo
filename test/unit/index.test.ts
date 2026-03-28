@@ -1,7 +1,7 @@
 /* eslint-disable max-len,max-lines */
 
 import Validator from '@valkyriestudios/validator';
-import {describe, it, beforeEach, afterEach, expect} from 'vitest';
+import {describe, it, beforeEach, afterEach, expect, vi} from 'vitest';
 import DBMongo, {MongoOptions} from '../../lib';
 import Query from '../../lib/Query';
 import CONSTANTS from '../constants';
@@ -14,6 +14,48 @@ import {
 } from '../../lib/Types';
 import MockDb from '../MockDb';
 import MockCollection from '../MockCollection';
+
+vi.mock('mongodb', async importOriginal => {
+    const actual = await importOriginal<any>();
+
+    class ProxyMongoClient {
+
+        uri: string;
+
+        opts: any;
+
+        delegate: any;
+
+        constructor (uri: string, opts: any) {
+            this.uri = uri;
+            this.opts = opts;
+        }
+
+        async connect () {
+            const MockClient = (await import('../MockClient')).default;
+            this.delegate = new MockClient(this.uri, this.opts);
+            return this.delegate.connect();
+        }
+
+        db (name: string, opts: any) {
+            return this.delegate.db(name, opts);
+        }
+
+        startSession (options?: any) {
+            return this.delegate.startSession(options);
+        }
+
+        async close () {
+            if (this.delegate) return this.delegate.close();
+        }
+
+    }
+
+    return {
+        ...actual,
+        MongoClient: ProxyMongoClient,
+    };
+});
 
 const FULL_VALID_OPTS:MongoOptions = {
     debug: true,
@@ -34,15 +76,18 @@ const FULL_VALID_OPTS:MongoOptions = {
 
 const FULL_VALID_CONNECT_EXPECTED_PAYLOAD = {
     opts: {
+        appName: 'ValkyrieApp',
         compressors: ['zlib'],
         connectTimeoutMS: 10000,
         maxConnecting: 5,
+        maxIdleTimeMS: 10000,
         maxPoolSize: 5,
         minPoolSize: 1,
         readPreference: 'nearest',
         retryReads: true,
         retryWrites: true,
         socketTimeoutMS: 0,
+        serverSelectionTimeoutMS: 5000,
         zlibCompressionLevel: 3,
     },
     uri: 'mongodb://root:rootroot@127.0.0.1:27017/admin',
@@ -73,6 +118,9 @@ const FULL_VALID_URI_CONNECT_EXPECTED_PAYLOAD = {
         retryWrites: false,
         socketTimeoutMS: 0,
         zlibCompressionLevel: 3,
+        appName: 'ValkyrieApp',
+        maxIdleTimeMS: 10000,
+        serverSelectionTimeoutMS: 5000,
     },
     uri: 'mongodb://root:rootroot@127.0.0.1:27017/main?retryWrites=false',
 };
@@ -172,8 +220,8 @@ describe('Index', () => {
                     expect(MockClient.isEmpty).toBe(true);
                 });
 
-                it('Should throw when passed as a number above 100', () => {
-                    for (const el of [101, 1000, 99999]) {
+                it('Should throw when passed as a number above 250', () => {
+                    for (const el of [251, 1000, 99999]) {
                         expect(
                             /* @ts-ignore */
                             () => new DBMongo({...FULL_VALID_OPTS, ...{pool_size: el}})
@@ -202,6 +250,122 @@ describe('Index', () => {
                     expect(() => new DBMongo(opts)).not.toThrow();
                     expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
                     expect(MockClient.isEmpty).toBe(true);
+                });
+            });
+
+            describe('option: min_pool_size', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{min_pool_size: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                    expect(mockConsoleInfo.isEmpty).toBe(true);
+                    expect(mockConsoleError.isEmpty).toBe(true);
+                    expect(MockClient.isEmpty).toBe(true);
+                });
+
+                it('Should throw when passed as a number above 250', () => {
+                    for (const el of [251, 1000, 99999]) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{min_pool_size: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should throw when passed as a number below 0', () => {
+                    for (const el of [-1, -100]) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{min_pool_size: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.min_pool_size;
+                    expect(() => new DBMongo(opts)).not.toThrow();
+                    expect(mockConsoleInfo.calls).toEqual([['[info] Mongo@ctor: Instantiated']]);
+                });
+            });
+
+            describe('option: server_selection_timeout_ms', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{server_selection_timeout_ms: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should throw when passed as a number below 1000', () => {
+                    for (const el of [-1, 0, 500, 999]) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{server_selection_timeout_ms: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.server_selection_timeout_ms;
+                    expect(() => new DBMongo(opts)).not.toThrow();
+                });
+            });
+
+            describe('option: max_idle_time_ms', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{max_idle_time_ms: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should throw when passed as a number below 1000', () => {
+                    for (const el of [-1, 0, 500, 999]) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{max_idle_time_ms: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.max_idle_time_ms;
+                    expect(() => new DBMongo(opts)).not.toThrow();
+                });
+            });
+
+            describe('option: app_name', () => {
+                it('Should throw when passed as a non-string or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        if (el === undefined) continue;
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_OPTS, ...{app_name: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should throw when string is too long (above 128 chars)', () => {
+                    const longString = 'a'.repeat(129);
+                    expect(
+                        () => new DBMongo({...FULL_VALID_OPTS, app_name: longString})
+                    ).toThrowError(/Mongo@ctor: options are invalid/);
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_OPTS};
+                    delete opts.app_name;
+                    expect(() => new DBMongo(opts)).not.toThrow();
                 });
             });
 
@@ -564,6 +728,91 @@ describe('Index', () => {
                 });
             });
 
+            describe('option: min_pool_size', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{min_pool_size: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should throw when passed as a number below 0 or above 250', () => {
+                    for (const el of [-1, 251, 1000]) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{min_pool_size: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should not throw when not passed', () => {
+                    const opts:any = {...FULL_VALID_URI_OPTS};
+                    delete opts.min_pool_size;
+                    expect(() => new DBMongo(opts)).not.toThrow();
+                });
+            });
+
+            describe('option: server_selection_timeout_ms', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{server_selection_timeout_ms: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should throw when passed as a number below 1000', () => {
+                    for (const el of [-1, 0, 500, 999]) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{server_selection_timeout_ms: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+            });
+
+            describe('option: max_idle_time_ms', () => {
+                it('Should throw when passed as a non-integer', () => {
+                    for (const el of CONSTANTS.NOT_INTEGER) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{max_idle_time_ms: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should throw when passed as a number below 1000', () => {
+                    for (const el of [-1, 0, 500, 999]) {
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{max_idle_time_ms: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+            });
+
+            describe('option: app_name', () => {
+                it('Should throw when passed as a non-string or empty string', () => {
+                    for (const el of CONSTANTS.NOT_STRING_WITH_EMPTY) {
+                        if (el === undefined) continue;
+                        expect(
+                            /* @ts-ignore */
+                            () => new DBMongo({...FULL_VALID_URI_OPTS, ...{app_name: el}})
+                        ).toThrowError(/Mongo@ctor: options are invalid/);
+                    }
+                });
+
+                it('Should throw when string is too long', () => {
+                    const longString = 'a'.repeat(129);
+                    expect(
+                        () => new DBMongo({...FULL_VALID_URI_OPTS, app_name: longString})
+                    ).toThrowError(/Mongo@ctor: options are invalid/);
+                });
+            });
+
             describe('option: pool_size', () => {
                 it('Should throw when passed as a non-integer', () => {
                     for (const el of CONSTANTS.NOT_INTEGER) {
@@ -577,8 +826,8 @@ describe('Index', () => {
                     expect(MockClient.isEmpty).toBe(true);
                 });
 
-                it('Should throw when passed as a number above 100', () => {
-                    for (const el of [101, 1000, 99999]) {
+                it('Should throw when passed as a number above 250', () => {
+                    for (const el of [251, 1000, 99999]) {
                         expect(
                             /* @ts-ignore */
                             () => new DBMongo({...FULL_VALID_URI_OPTS, ...{pool_size: el}})
@@ -689,6 +938,39 @@ describe('Index', () => {
                     expect(() => new DBMongo({
                         ...FULL_VALID_URI_OPTS,
                         uri: 'mongodb://peter:rootroot@myhappymongo.com/myDb?readPreference=nearest',
+                    })).not.toThrow();
+                });
+
+                it('Should not throw when passed as a string with serverSelectionTimeoutMS inside of it', () => {
+                    expect(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb+srv://peter:rootroot@myhappymongo.com/myDb?serverSelectionTimeoutMS=9000',
+                    })).not.toThrow();
+                    expect(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb://peter:rootroot@myhappymongo.com/myDb?serverSelectionTimeoutMS=9000',
+                    })).not.toThrow();
+                });
+
+                it('Should not throw when passed as a string with maxIdleTimeMS inside of it', () => {
+                    expect(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb+srv://peter:rootroot@myhappymongo.com/myDb?maxIdleTimeMS=15000',
+                    })).not.toThrow();
+                    expect(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb://peter:rootroot@myhappymongo.com/myDb?maxIdleTimeMS=15000',
+                    })).not.toThrow();
+                });
+
+                it('Should not throw when passed as a string with appName inside of it', () => {
+                    expect(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb+srv://peter:rootroot@myhappymongo.com/myDb?appName=MyCoolService',
+                    })).not.toThrow();
+                    expect(() => new DBMongo({
+                        ...FULL_VALID_URI_OPTS,
+                        uri: 'mongodb://peter:rootroot@myhappymongo.com/myDb?appName=MyCoolService',
                     })).not.toThrow();
                 });
             });
@@ -1155,6 +1437,9 @@ describe('Index', () => {
                         retryWrites: false,
                         socketTimeoutMS: 0,
                         zlibCompressionLevel: 3,
+                        appName: 'ValkyrieApp',
+                        maxIdleTimeMS: 10000,
+                        serverSelectionTimeoutMS: 5000,
                     },
                     uri: 'mongodb+srv://joe:blake@bla.mongodb.com/gods?replicaSet=nonono',
                 }},
@@ -1506,26 +1791,26 @@ describe('Index', () => {
                     ['[info] Mongo@createCollection: Creating collection', {collection: 'collection_2'}],
                     ['[info] Mongo@createCollection: Collection created', {collection: 'collection_2'}],
                     ['[info] Mongo@hasIndex: Index does not exist', {collection: 'collection_2', name: 'uid_asc'}],
-                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_2', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
-                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_2', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
+                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_2', name: 'uid_asc', options: {}, spec: {uid: 1}}],
+                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_2', name: 'uid_asc', options: {}, spec: {uid: 1}}],
                     ['[info] Mongo@hasCollection: Collection does not exist', {collection: 'collection_3'}],
                     ['[info] Mongo@createCollection: Creating collection', {collection: 'collection_3'}],
                     ['[info] Mongo@createCollection: Collection created', {collection: 'collection_3'}],
                     ['[info] Mongo@hasIndex: Index does not exist', {collection: 'collection_3', name: 'uid_asc'}],
-                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_3', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
-                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_3', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
+                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_3', name: 'uid_asc', options: {}, spec: {uid: 1}}],
+                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_3', name: 'uid_asc', options: {}, spec: {uid: 1}}],
                     ['[info] Mongo@hasIndex: Index does not exist', {collection: 'collection_3', name: 'uid_asc_date_desc'}],
-                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_3', name: 'uid_asc_date_desc', options: {background: true}, spec: {uid: 1, date: -1}}],
-                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_3', name: 'uid_asc_date_desc', options: {background: true}, spec: {uid: 1, date: -1}}],
+                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_3', name: 'uid_asc_date_desc', options: {}, spec: {uid: 1, date: -1}}],
+                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_3', name: 'uid_asc_date_desc', options: {}, spec: {uid: 1, date: -1}}],
                     ['[info] Mongo@hasCollection: Collection does not exist', {collection: 'collection_4'}],
                     ['[info] Mongo@createCollection: Creating collection', {collection: 'collection_4'}],
                     ['[info] Mongo@createCollection: Collection created', {collection: 'collection_4'}],
                     ['[info] Mongo@hasIndex: Index does not exist', {collection: 'collection_4', name: 'uid_asc'}],
-                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_4', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
-                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_4', name: 'uid_asc', options: {background: true}, spec: {uid: 1}}],
+                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_4', name: 'uid_asc', options: {}, spec: {uid: 1}}],
+                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_4', name: 'uid_asc', options: {}, spec: {uid: 1}}],
                     ['[info] Mongo@hasIndex: Index does not exist', {collection: 'collection_4', name: 'uid_asc_date_desc'}],
-                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_4', name: 'uid_asc_date_desc', options: {background: true, expireAfterSeconds: 90}, spec: {uid: 1, date: -1}}],
-                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_4', name: 'uid_asc_date_desc', options: {background: true, expireAfterSeconds: 90}, spec: {uid: 1, date: -1}}],
+                    ['[info] Mongo@createIndex: Creating index', {collection: 'collection_4', name: 'uid_asc_date_desc', options: {expireAfterSeconds: 90}, spec: {uid: 1, date: -1}}],
+                    ['[info] Mongo@createIndex: Index created', {collection: 'collection_4', name: 'uid_asc_date_desc', options: {expireAfterSeconds: 90}, spec: {uid: 1, date: -1}}],
                     ['[info] Mongo@bootstrap: Structure ensured'],
                     ['[info] Mongo@close: Closing connection'],
                     ['[info] Mongo@close: Connection Terminated'],
@@ -1568,7 +1853,7 @@ describe('Index', () => {
                     },
                     {
                         key: 'createIndex',
-                        params: {indexSpec: {uid: 1}, options: {background: true, name: 'uid_asc'}},
+                        params: {indexSpec: {uid: 1}, options: {name: 'uid_asc'}},
                     },
                     {
                         key: 'listCollections',
@@ -1592,7 +1877,7 @@ describe('Index', () => {
                     },
                     {
                         key: 'createIndex',
-                        params: {indexSpec: {uid: 1}, options: {background: true, name: 'uid_asc'}},
+                        params: {indexSpec: {uid: 1}, options: {name: 'uid_asc'}},
                     },
                     {
                         key: 'collection',
@@ -1608,7 +1893,7 @@ describe('Index', () => {
                     },
                     {
                         key: 'createIndex',
-                        params: {indexSpec: {uid: 1, date: -1}, options: {background: true, name: 'uid_asc_date_desc'}},
+                        params: {indexSpec: {uid: 1, date: -1}, options: {name: 'uid_asc_date_desc'}},
                     },
                     {
                         key: 'listCollections',
@@ -1632,7 +1917,7 @@ describe('Index', () => {
                     },
                     {
                         key: 'createIndex',
-                        params: {indexSpec: {uid: 1}, options: {background: true, name: 'uid_asc'}},
+                        params: {indexSpec: {uid: 1}, options: {name: 'uid_asc'}},
                     },
                     {
                         key: 'collection',
@@ -1650,7 +1935,7 @@ describe('Index', () => {
                         key: 'createIndex',
                         params: {
                             indexSpec: {uid: 1, date: -1},
-                            options: {background: true, name: 'uid_asc_date_desc', expireAfterSeconds: 90},
+                            options: {name: 'uid_asc_date_desc', expireAfterSeconds: 90},
                         },
                     },
                 ]);
@@ -1884,6 +2169,9 @@ describe('Index', () => {
                         retryWrites: true,
                         socketTimeoutMS: 0,
                         zlibCompressionLevel: 3,
+                        appName: 'ValkyrieApp',
+                        maxIdleTimeMS: 10000,
+                        serverSelectionTimeoutMS: 5000,
                     },
                     uri: 'mongodb://peter:mysecret@127.0.0.1:27017/admin',
                 }},
@@ -1929,6 +2217,9 @@ describe('Index', () => {
                         retryWrites: false,
                         socketTimeoutMS: 0,
                         zlibCompressionLevel: 3,
+                        appName: 'ValkyrieApp',
+                        maxIdleTimeMS: 10000,
+                        serverSelectionTimeoutMS: 5000,
                     },
                     uri: 'mongodb+srv://joe:blake@bla.mongodb.com/gods?replicaSet=nonono',
                 }},
@@ -1975,6 +2266,9 @@ describe('Index', () => {
                         retryWrites: false,
                         socketTimeoutMS: 0,
                         zlibCompressionLevel: 3,
+                        appName: 'ValkyrieApp',
+                        maxIdleTimeMS: 10000,
+                        serverSelectionTimeoutMS: 5000,
                     },
                     uri: 'mongodb+srv://joe:blake@bla.mongodb.com/gods?replicaSet=nonono',
                 }},
@@ -2021,6 +2315,9 @@ describe('Index', () => {
                         retryWrites: false,
                         socketTimeoutMS: 0,
                         zlibCompressionLevel: 3,
+                        appName: 'ValkyrieApp',
+                        maxIdleTimeMS: 10000,
+                        serverSelectionTimeoutMS: 5000,
                         authMechanismProperties: {
                             SERVICE_NAME: 'PetersService',
                             ALLOWED_HOSTS: ['peter.com', 'peter2.com'],
@@ -2068,6 +2365,9 @@ describe('Index', () => {
                         retryWrites: false,
                         socketTimeoutMS: 0,
                         zlibCompressionLevel: 3,
+                        appName: 'ValkyrieApp',
+                        maxIdleTimeMS: 10000,
+                        serverSelectionTimeoutMS: 5000,
                     },
                     uri: 'mongodb://root:rootroot@127.0.0.1:27017/spiderman?retryWrites=false',
                 }},

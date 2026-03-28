@@ -53,6 +53,9 @@ type MongoHostFullOptions = {
     /* Size of the connection pool (defaults to 5) */
     pool_size: number;
 
+    /** Minimum pool size (defaults to 1) */
+    min_pool_size: number;
+
     /* Host URL (defaults to 127.0.0.1:27017) */
     host: string;
 
@@ -88,6 +91,15 @@ type MongoHostFullOptions = {
 
     /* Time in milliseconds to attempt a send or receive on a socket before the attempt times out */
     socket_timeout_ms: number;
+
+    /* Server selection timeout in milliseconds, defaults to 5000 */
+    server_selection_timeout_ms: number;
+
+    /* Max idle time in milliseconds, defaults to 10000 */
+    max_idle_time_ms: number;
+
+    /* Application name (defaults to 'ValkyrieApp') */
+    app_name?: string;
 }
 
 type MongoUriFullOptions = {
@@ -99,6 +111,9 @@ type MongoUriFullOptions = {
 
     /* Size of the connection pool (defaults to 5) */
     pool_size: number;
+
+    /** Minimum pool size (defaults to 1) */
+    min_pool_size: number;
 
     /* URI to connect to */
     uri: string;
@@ -121,8 +136,17 @@ type MongoUriFullOptions = {
     /* Time in milliseconds to attempt a send or receive on a socket before the attempt times out */
     socket_timeout_ms: number;
 
+    /* Server selection timeout in milliseconds, defaults to 5000 */
+    server_selection_timeout_ms: number;
+
+    /* Max idle time in milliseconds, defaults to 10000 */
+    max_idle_time_ms: number;
+
     /* Auth mechanism properties (eg: AWS_CREDENTIAL_PROVIDER) */
     auth_mechanism_properties?: AuthMechanismProperties;
+
+    /* Application name (defaults to 'ValkyrieApp') */
+    app_name?: string;
 }
 
 /* Required mongo options */
@@ -150,16 +174,19 @@ type CollectionStructure = {
  * Validation Setup
  */
 
-const CustomValidator = Validator.extend({
+const BaseValidator = Validator.extend({
     mongo_enum_protocols: Object.values(Protocols),
     mongo_enum_read_pref: Object.values(ReadPreferences),
     mongo_index_val: [-1, 1, '2d', '2dsphere', 'text', 'geoHaystack', 'hashed'],
     mongo_debug_level: Object.values(LogLevel),
     mongo_uri: /^(mongodb(?:\+srv)?):\/\/(?:([^:@]+)(?::([^@]+))?@)?([A-Za-z0-9.-]+(?::\d+)?(?:,[A-Za-z0-9.-]+(?::\d+)?)*)(?:\/([^/?]+)?)?(?:\?(.*))?$/, /* eslint-disable-line max-len */
+});
+
+const CustomValidator = BaseValidator.extend({
     mongo_collection_structure_index: {
         name: 'string_ne|min:1|max:128',
         spec: '{min:1}mongo_index_val',
-        options: '?object_ne',
+        options: '?object',
     },
 });
 
@@ -169,34 +196,42 @@ const vCollectionStructure = CustomValidator.create({
 });
 
 const vOptions = CustomValidator.create({
-    debug               : 'boolean',
-    debug_levels        : '[unique]mongo_debug_level',
-    pool_size           : 'integer|min:1|max:100',
-    host                : 'string_ne|min:1|max:1024',
-    user                : 'string_ne|min:1|max:256',
-    pass                : 'string_ne|min:1|max:256',
-    db                  : 'string_ne|min:1|max:128',
-    auth_db             : 'string_ne|min:1|max:128',
-    replset             : ['string_ne|min:1|max:128', 'false'],
-    protocol            : 'mongo_enum_protocols',
-    read_preference     : 'mongo_enum_read_pref',
-    retry_reads         : 'boolean',
-    retry_writes        : 'boolean',
-    connect_timeout_ms  : 'integer|min:1000',
-    socket_timeout_ms   : 'integer|min:0',
+    debug                       : 'boolean',
+    debug_levels                : '[unique]mongo_debug_level',
+    pool_size                   : 'integer|min:1|max:250',
+    host                        : 'string_ne|min:1|max:1024',
+    user                        : 'string_ne|min:1|max:256',
+    pass                        : 'string_ne|min:1|max:256',
+    db                          : 'string_ne|min:1|max:128',
+    auth_db                     : 'string_ne|min:1|max:128',
+    replset                     : ['string_ne|min:1|max:128', 'false'],
+    protocol                    : 'mongo_enum_protocols',
+    read_preference             : 'mongo_enum_read_pref',
+    retry_reads                 : 'boolean',
+    retry_writes                : 'boolean',
+    connect_timeout_ms          : 'integer|min:1000',
+    socket_timeout_ms           : 'integer|min:0',
+    min_pool_size               : 'integer|min:0|max:250',
+    server_selection_timeout_ms : 'integer|min:1000',
+    max_idle_time_ms            : 'integer|min:1000',
+    app_name                    : '?string_ne|min:1|max:128',
 });
 
 const vUriOptions = CustomValidator.create({
-    debug               : 'boolean',
-    debug_levels        : '[unique]mongo_debug_level',
-    uri                 : 'mongo_uri',
-    pool_size           : 'integer|min:1|max:100',
-    db                  : 'string_ne|min:1|max:128',
-    read_preference     : 'mongo_enum_read_pref',
-    retry_reads         : 'boolean',
-    retry_writes        : 'boolean',
-    connect_timeout_ms  : 'integer|min:1000',
-    socket_timeout_ms   : 'integer|min:0',
+    debug                       : 'boolean',
+    debug_levels                : '[unique]mongo_debug_level',
+    uri                         : 'mongo_uri',
+    pool_size                   : 'integer|min:1|max:250',
+    min_pool_size               : 'integer|min:0|max:250',
+    server_selection_timeout_ms : 'integer|min:1000',
+    max_idle_time_ms            : 'integer|min:1000',
+    app_name                    : '?string_ne|min:1|max:128',
+    db                          : 'string_ne|min:1|max:128',
+    read_preference             : 'mongo_enum_read_pref',
+    retry_reads                 : 'boolean',
+    retry_writes                : 'boolean',
+    connect_timeout_ms          : 'integer|min:1000',
+    socket_timeout_ms           : 'integer|min:0',
     auth_mechanism_properties: ['?', {
         SERVICE_HOST: '?string_ne',
         SERVICE_NAME: '?string_ne',
@@ -216,6 +251,10 @@ const DEFAULTS = {
     debug: false,
     debug_levels: [LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR],
     pool_size: 5,
+    min_pool_size: 1,
+    server_selection_timeout_ms: 5000,
+    max_idle_time_ms: 10000,
+    app_name: 'ValkyrieApp',
     read_preference: ReadPreferences.NEAREST,
     retry_reads: true,
     retry_writes: true,
@@ -275,6 +314,18 @@ function getConfigFromUriOptions (opts:MongoUriOptions):{config:MongoUriFullOpti
 
         if (url.searchParams.has('socketTimeoutMS')) {
             config.socket_timeout_ms = parseInt(url.searchParams.get('socketTimeoutMS') as string);
+        }
+
+        if (url.searchParams.has('serverSelectionTimeoutMS')) {
+            config.server_selection_timeout_ms = parseInt(url.searchParams.get('serverSelectionTimeoutMS') as string);
+        }
+
+        if (url.searchParams.has('maxIdleTimeMS')) {
+            config.max_idle_time_ms = parseInt(url.searchParams.get('maxIdleTimeMS') as string);
+        }
+
+        if (url.searchParams.has('appName')) {
+            config.app_name = url.searchParams.get('appName');
         }
 
         if (!config.db) {
@@ -455,7 +506,7 @@ class Mongo {
                             struct.name,
                             idx.name,
                             idx.spec,
-                            {background: true, ...idx.options || {}}
+                            idx.options || {}
                         );
                     }
                 }
@@ -493,22 +544,26 @@ class Mongo {
              * https://mongodb.github.io/node-mongodb-native/6.3/classes/MongoClient.html
              * https://mongodb.github.io/node-mongodb-native/6.3/classes/MongoClient.html#connect
              */
-            this.#mongo_client = await MongoClient.connect(this.#uri, {
-                minPoolSize         : 1,
-                maxPoolSize         : this.#config.pool_size,
-                maxConnecting       : this.#config.pool_size,
-                connectTimeoutMS    : this.#config.connect_timeout_ms,
-                socketTimeoutMS     : this.#config.socket_timeout_ms,
-                readPreference      : this.#config.read_preference,
-                retryReads          : this.#config.retry_reads,
-                retryWrites         : this.#config.retry_writes,
-                compressors         : ['zlib'],
-                zlibCompressionLevel: 3,
+            this.#mongo_client = new MongoClient(this.#uri, {
+                appName                 : this.#config.app_name,
+                minPoolSize             : this.#config.min_pool_size,
+                maxPoolSize             : this.#config.pool_size,
+                maxConnecting           : this.#config.pool_size,
+                serverSelectionTimeoutMS: this.#config.server_selection_timeout_ms,
+                maxIdleTimeMS           : this.#config.max_idle_time_ms,
+                connectTimeoutMS        : this.#config.connect_timeout_ms,
+                socketTimeoutMS         : this.#config.socket_timeout_ms,
+                readPreference          : this.#config.read_preference,
+                retryReads              : this.#config.retry_reads,
+                retryWrites             : this.#config.retry_writes,
+                compressors             : ['zlib'],
+                zlibCompressionLevel    : 3,
                 ...isNeObject((this.#config as MongoUriFullOptions).auth_mechanism_properties)
                     ? {authMechanismProperties: (this.#config as MongoUriFullOptions).auth_mechanism_properties}
                     : {},
             });
-            if (!(this.#mongo_client instanceof MongoClient)) throw new Error('Mongo@connect: Failed to create client pool');
+            this.#mongo_client = await this.#mongo_client.connect();
+            if (!this.#mongo_client) throw new Error('Mongo@connect: Failed to create client pool');
 
             /**
              * Create db instance we want to use
@@ -782,7 +837,7 @@ class Mongo {
      * @returns {Promise<Document[]>}
      * @throws {Error} When invalid options are passed
      */
-    async aggregate <T extends Document> (collection:string, pipeline:Document[]):Promise<T[]> {
+    async aggregate <T = Document> (collection:string, pipeline:Document[]):Promise<T[]> {
         if (!isNeString(collection)) throw new Error('Mongo@aggregate: Collection should be a non-empty string');
         if (!isNeArray(pipeline)) throw new Error('Mongo@aggregate: Pipeline should be a non-empty array');
 
@@ -793,7 +848,7 @@ class Mongo {
         }
         if (!isNeArray(s_pipe)) throw new Error('Mongo@aggregate: Pipeline empty after sanitization');
 
-        return new Query<T>(this, collection.trim()).aggregate<T>(s_pipe);
+        return new Query(this, collection.trim()).aggregate<T>(s_pipe);
     }
 
     /**

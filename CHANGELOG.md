@@ -6,7 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- **feat**: Added `min_pool_size` config option (defaults to 1) to allow connection pre-warming for high-traffic apps.
+- **feat**: Added `max_idle_time_ms` config option (defaults to 10000) to actively recycle connections and prevent silent firewall/load-balancer drops.
+- **feat**: Added `server_selection_timeout_ms` config option (defaults to 5000) to implement a "fail-fast" mechanism if the MongoDB cluster is unreachable, preventing Node.js event loop hangs.
+- **feat**: Added `app_name` config option to improve observability and identify the service in MongoDB Atlas / `mongostat` metrics.
+- **feat**: URI parser now automatically extracts `appName`, `serverSelectionTimeoutMS`, `maxIdleTimeMS`, and `minPoolSize` from connection strings.
+
 ### Improved
+- **perf**: Refactored `Query.insertMany` to use the native driver `collection.insertMany()` method instead of manually iterating over an unordered bulk operator, reducing overhead.
+- **refactor**: Updated connection initialization to use `new MongoClient().connect()` instead of the deprecated static `MongoClient.connect()`, ensuring full compatibility with MongoDB Node Driver v7+.
+- **refactor**: Removed the deprecated `background: true` flag from `createIndex` operations (index creation is natively non-blocking in modern MongoDB).
+- **refactor**: Increased the upper validation limit of `pool_size` and `min_pool_size` to 250 to accommodate higher-throughput environments.
 - **deps**: Upgrade @valkyriestudios/utils to 12.50.0
 - **deps**: Upgrade @valkyriestudios/validator to 10.13.0
 - **deps**: Upgrade mongodb to 7.1.1
@@ -15,6 +26,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - **deps**: Upgrade eslint to 9.39.4
 - **deps**: Upgrade typescript-eslint to 8.57.0
 - **deps**: Upgrade vitest to 4.1.2
+
+### Fixed
+- **fix(types)**: Changed generics on `Query.findOne` and `Query.aggregate` from strict extension (`<T extends TModel>`) to default assignment (`<T = TModel>`). This allows proper type inferencing for Projections and Aggregations that fundamentally change the return shape.
 
 ## [2.8.0] - 2026-01-03
 ### Added

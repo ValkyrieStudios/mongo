@@ -1,9 +1,8 @@
-import {ClientSession, DbOptions, MongoClient, MongoClientOptions} from 'mongodb';
+import {ClientSession, DbOptions, MongoClientOptions} from 'mongodb';
 import MockDb from './MockDb';
 
 type MockMode = 'throw' | 'wrongret' | 'success';
 
-const orig_connect = MongoClient.connect;
 let con_mode:MockMode = 'success';
 let db_mode:MockMode = 'success';
 let close_mode:MockMode = 'success';
@@ -11,51 +10,41 @@ let session_mode:MockMode = 'success';
 let txn_mode:MockMode = 'success';
 let calls:unknown[] = [];
 
-export default class MockClient extends MongoClient {
-
+export default class MockClient {
     uri:string;
-
     opts:MongoClientOptions;
 
     constructor (uri:string, opts:MongoClientOptions) {
-        super(uri, opts);
-
         this.uri = uri;
-
         this.opts = opts;
     }
 
-    /* eslint-disable-next-line */
-    /* @ts-ignore */
+    async connect(): Promise<MockClient> {
+        calls.push({key: 'connect', params: {uri: this.uri, opts: this.opts}});
+
+        if (con_mode === 'throw') throw new Error('MockClient@connect: Oh No!');
+        if (con_mode === 'wrongret') return false as unknown as MockClient;
+
+        return this;
+    }
+
     db (name:string, opts:DbOptions):MockDb {
         calls.push({key: 'db', params: {name, opts}});
 
         if (db_mode === 'throw') throw new Error('MockClient@db: Oh No!');
-
-        /* eslint-disable-next-line */
-        /* @ts-ignore */
-        if (db_mode === 'wrongret') return false;
+        if (db_mode === 'wrongret') return false as unknown as MockDb;
 
         return new MockDb(name, opts);
     }
 
-    /* eslint-disable-next-line */
-    /* @ts-ignore */
-    startSession(options?: ClientSessionOptions): ClientSession {
+    startSession(options?: unknown): ClientSession {
         calls.push({key: 'startSession', params: {options}});
-
         if (session_mode === 'throw') throw new Error('MockClient@startSession: Failed');
 
-        // Return a Mock Session
         return {
-            /* eslint-disable-next-line */
-            /* @ts-ignore */
-            withTransaction: async (fn: (session: ClientSession) => Promise<unknown>, opts?: TransactionOptions) => {
+            withTransaction: async (fn: (session: ClientSession) => Promise<unknown>, opts?: unknown) => {
                 calls.push({key: 'withTransaction', params: {opts}});
-
                 if (txn_mode === 'throw') throw new Error('MockClient@withTransaction: Aborted');
-
-                // Execute the callback passed by the user
                 return await fn({} as ClientSession);
             },
             endSession: async () => {
@@ -66,20 +55,7 @@ export default class MockClient extends MongoClient {
 
     async close ():Promise<void> {
         calls.push({key: 'close', params: {}});
-
         if (close_mode === 'throw') throw new Error('MockClient@close: Oh No!');
-    }
-
-    static async connect (uri:string, opts:MongoClientOptions):Promise<MockClient> {
-        calls.push({key: 'connect', params: {uri, opts}});
-
-        if (con_mode === 'throw') throw new Error('MockClient@connect: Oh No!');
-
-        /* eslint-disable-next-line */
-        /* @ts-ignore */
-        if (con_mode === 'wrongret') return false;
-
-        return new MockClient(uri, opts);
     }
 
     static setConnectMode (mode:MockMode = 'success') { con_mode = mode; }
@@ -93,9 +69,6 @@ export default class MockClient extends MongoClient {
 
     static mock () {
         MockClient.reset();
-        /* eslint-disable-next-line */
-        /* @ts-ignore */
-        MongoClient.connect = MockClient.connect;
     }
 
     static reset () {
@@ -110,7 +83,5 @@ export default class MockClient extends MongoClient {
 
     static restore () {
         MockClient.reset();
-        MongoClient.connect = orig_connect;
     }
-
 }

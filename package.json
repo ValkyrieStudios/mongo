@@ -54,17 +54,17 @@
         }
     },
     "dependencies": {
-        "@valkyriestudios/utils": "^12.48.0",
-        "@valkyriestudios/validator": "^10.11.0",
-        "mongodb": "^6.21.0"
+        "@valkyriestudios/utils": "^12.50.0",
+        "@valkyriestudios/validator": "^10.13.0",
+        "mongodb": "^7.1.1"
     },
     "devDependencies": {
-        "@types/node": "^24.10.4",
-        "@vitest/coverage-v8": "^4.0.16",
+        "@types/node": "^24.12.0",
+        "@vitest/coverage-v8": "^4.1.2",
         "esbuild-register": "^3.6.0",
-        "eslint": "^9.39.2",
+        "eslint": "^9.39.4",
         "typescript": "^5.9.3",
-        "typescript-eslint": "^8.51.0",
-        "vitest": "^4.0.16"
+        "typescript-eslint": "^8.57.0",
+        "vitest": "^4.1.2"
     }
 }

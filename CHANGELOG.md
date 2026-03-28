@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Improved
+- **deps**: Upgrade @valkyriestudios/utils to 12.50.0
+- **deps**: Upgrade @valkyriestudios/validator to 10.13.0
+- **deps**: Upgrade mongodb to 7.1.1
+- **deps**: Upgrade @types/node to 24.12.0
+- **deps**: Upgrade @vitest/coverage-v8 to 4.1.2
+- **deps**: Upgrade eslint to 9.39.4
+- **deps**: Upgrade typescript-eslint to 8.57.0
+- **deps**: Upgrade vitest to 4.1.2
+
 ## [2.8.0] - 2026-01-03
 ### Added
 **feat**: Added `withTransaction` to the main `Mongo` instance. This wrapper simplifies ACID-compliant operations by automatically handling session creation, committing, and aborting (rollback) on errors.
